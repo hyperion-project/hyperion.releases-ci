@@ -50,7 +50,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: ${{ env.ghcr }}/hyperion.ng
-          ref: ${{ github.event.inputs.head_sha || 'master' }}
+          ref: ${{ inputs.head_sha || 'master' }}
           submodules: recursive
 
       - name: ⬇ Checkout hyperion.releases-ci
