@@ -23,7 +23,7 @@ jobs:
     steps:
       - name: 🔧 Install Dependencies
         shell: bash
-        run: dnf install git gnupg2 reprepro createrepo rpm-sign -y
+        run: dnf install git gnupg2 zstd reprepro createrepo rpm-sign -y
 
       - name: ⬇ Checkout
         uses: actions/checkout@v4
