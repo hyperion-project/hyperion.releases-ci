@@ -19,15 +19,16 @@ jobs:
     with:
       head_sha: workflow_test
 
-  rpm_build:
-    name: 👷 Build RPM Packages
-    uses: ./.github/workflows/build_rpm.yml
-    secrets: inherit
-    with:
-      head_sha: workflow_test
+  # rpm_build:
+  #   name: 👷 Build RPM Packages
+  #   uses: ./.github/workflows/build_rpm.yml
+  #   secrets: inherit
+  #   with:
+  #     head_sha: workflow_test
 
   publish_test:
     name: 🚀 Publish Packages (Test)
-    needs: [ deb_build, rpm_build ]
+    # needs: [ deb_build, rpm_build ]
+    needs: [ deb_build ]
     uses: ./.github/workflows/publish_deb_rpm.yml
     secrets: inherit
