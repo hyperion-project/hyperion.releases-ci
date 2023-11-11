@@ -1,0 +1,33 @@
+name: Tag/Version Builds
+
+on:
+  repository_dispatch:
+    types: [ releases_repo_build ]
+
+jobs:
+  # Build DEB Packages for APT Repository
+  deb_build:
+    name: 👷 Build DEB Packages
+    uses: ./.github/workflows/build_deb.yml
+    secrets: inherit
+    with:
+      head_sha: ${{ github.event.client_payload.head_sha }}
+      upload: true
+
+  # Build RPM Packages for DNF Repository
+  rpm_build:
+    name: 👷 Build RPM Packages
+    uses: ./.github/workflows/build_rpm.yml
+    secrets: inherit
+    with:
+      head_sha: ${{ github.event.client_payload.head_sha }}
+      upload: true
+
+  # Publish RPM Packages to DNF Repository
+  publish_packages:
+    name: 🚀 Publish Packages
+    needs: [ deb_build, rpm_build ]
+    uses: ./.github/workflows/publish_deb_rpm.yml
+    secrets: inherit
+    with:
+      publish: true
