@@ -55,12 +55,9 @@ jobs:
               reprepro -Vb deb createsymlinks
               reprepro -Vb deb export
               for file in artifact/hyperion_*.deb; do
-                echo "$file"
                 if [ -f "$file" ]; then
                   dist=${file#*~}
-                  echo "$dist"
                   dist=${dist%_*}
-                  echo "$dist"
                   reprepro -Vb deb/ includedeb "$dist" "$file"
                 fi
               done
