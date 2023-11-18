@@ -20,7 +20,7 @@ on:
         required: false
 
 env:
-  ghcr: paulchen-panther #hyperion-project
+  ghcr: hyperion-project
 
 jobs:
   build:

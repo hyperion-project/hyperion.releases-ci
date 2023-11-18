@@ -16,7 +16,7 @@ on:
 
 jobs:
   publish:
-    name: 🚀 Publish
+    name: 🚀 Publish ${{ inputs.publish && '(Test)' || '' }}
     runs-on: ubuntu-latest
     container:
       image: fedora
@@ -140,4 +140,5 @@ jobs:
       - name: 🧹 Cleanup
         uses: geekyeggo/delete-artifact@v2
         with:
+          name: artifact
           failOnError: false
