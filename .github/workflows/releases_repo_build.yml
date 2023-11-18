@@ -3,6 +3,13 @@ name: Tag/Version Builds
 on:
   repository_dispatch:
     types: [ releases_repo_build ]
+  workflow_dispatch:
+    inputs:
+      head_sha:
+        type: string
+        default: master
+        description: The branch, tag or SHA to checkout
+        required: false
 
 jobs:
   # Build DEB Packages for APT Repository
@@ -11,7 +18,7 @@ jobs:
     uses: ./.github/workflows/build_deb.yml
     secrets: inherit
     with:
-      head_sha: ${{ github.event.client_payload.head_sha }}
+      head_sha: ${{ github.event.client_payload.head_sha || inputs.head_sha }}
       upload: true
 
   # Build RPM Packages for DNF Repository
@@ -20,7 +27,7 @@ jobs:
     uses: ./.github/workflows/build_rpm.yml
     secrets: inherit
     with:
-      head_sha: ${{ github.event.client_payload.head_sha }}
+      head_sha: ${{ github.event.client_payload.head_sha || inputs.head_sha }}
       upload: true
 
   # Publish RPM Packages to DNF Repository
