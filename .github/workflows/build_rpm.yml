@@ -3,15 +3,15 @@ name: RPM Packages build for DNF Repository
 on:
   workflow_call:
     inputs:
-      repository:
+      repo_checkout:
         type: string
         description: The GitHub Repository to checkout
-        default: "hyperion-project"
+        default: hyperion-project
         required: false
       head_sha:
         type: string
         description: The branch, tag or SHA to checkout
-        default: "master"
+        default: master
         required: false
       nightly:
         type: boolean
@@ -25,7 +25,7 @@ on:
         required: false
 
 env:
-  ghcr: ${{ inputs.repository }}
+  ghcr: ${{ inputs.repo_checkout }}
 
 jobs:
   build:
