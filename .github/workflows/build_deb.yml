@@ -3,6 +3,11 @@ name: DEB Packages build for APT Repository
 on:
   workflow_call:
     inputs:
+      repository:
+        type: string
+        description: The GitHub Repository to checkout
+        default: "hyperion-project"
+        required: false
       head_sha:
         type: string
         description: The branch, tag or SHA to checkout
@@ -20,7 +25,7 @@ on:
         required: false
 
 env:
-  ghcr: hyperion-project
+  ghcr: ${{ inputs.repository }}
 
 jobs:
   build:

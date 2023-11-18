@@ -5,6 +5,11 @@ on:
     types: [ releases_repo_build ]
   workflow_dispatch:
     inputs:
+      repository:
+        type: string
+        description: The GitHub Repository to checkout
+        default: "hyperion-project"
+        required: false
       head_sha:
         type: string
         default: master
@@ -18,6 +23,7 @@ jobs:
     uses: ./.github/workflows/build_deb.yml
     secrets: inherit
     with:
+      repository: ${{ inputs.repository }}
       head_sha: ${{ github.event.client_payload.head_sha || inputs.head_sha }}
       upload: true
 
@@ -27,6 +33,7 @@ jobs:
     uses: ./.github/workflows/build_rpm.yml
     secrets: inherit
     with:
+      repository: ${{ inputs.repository }}
       head_sha: ${{ github.event.client_payload.head_sha || inputs.head_sha }}
       upload: true
 
