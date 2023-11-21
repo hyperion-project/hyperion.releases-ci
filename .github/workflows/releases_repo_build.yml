@@ -7,13 +7,13 @@ on:
     inputs:
       repo_checkout:
         type: string
-        description: The GitHub Repository to checkout
+        description: The GitHub Repository to checkout (lower case)
         default: hyperion-project
         required: false
       head_sha:
         type: string
         default: master
-        description: The branch, tag or SHA to checkout
+        description: The branch, tag or SHA to checkout (case sensitive)
         required: false
 
 jobs:

@@ -16,7 +16,7 @@ on:
 
 jobs:
   publish:
-    name: 🚀 Publish ${{ inputs.publish && '(Test)' || '' }}
+    name: ${{ inputs.publish && '🚀 Publish repository' || '📦 Assemble repository' }}
     runs-on: ubuntu-latest
     container:
       image: fedora
@@ -61,6 +61,7 @@ jobs:
                   reprepro -Vb deb/ includedeb "$dist" "$file"
                 fi
               done
+              cp .github/workflows/redirect.html deb/index.html
             fi
           echo '::endgroup::'
 
@@ -91,6 +92,7 @@ jobs:
                   sed -r "s/@CHANNEL@/${channel}/g; s/@DIST@/${distArray[${dist_ver:0:2}]}/g; s/@ARCH@/${dist_ver_arch##*.}/g" ${GITHUB_WORKSPACE}/rpmbuild/hyperion.repo.in > rpm/${distArray[${dist_ver:0:2}]}/hyperion.repo
                 fi
               done
+              cp .github/workflows/redirect.html rpm/index.html
             fi
           echo '::endgroup::'
 
