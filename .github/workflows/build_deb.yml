@@ -68,7 +68,7 @@ jobs:
         run: |
           echo '::group::Checking the version number'
             if [[ "${{ inputs.nightly }}" = true ]]; then
-              echo "$(tr -d '\n' < .version)+nightly$(date '+%Y%m%d')$(git rev-parse --short HEAD)" > .version
+              echo "$(tr -d '\n' < .version)+nightly$(date '+%Y%m%d')${{ inputs.head_sha }}" > .version
             else
               tr -d '\n' < .version > temp && mv temp .version
             fi

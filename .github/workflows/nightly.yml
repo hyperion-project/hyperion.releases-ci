@@ -12,7 +12,7 @@ jobs:
 ###############################################
 
   update_submodule:
-    name: 🔁 Update Submodule rpi_ws281x (Nightly build only)
+    name: 🔁 Update Submodule rpi_ws281x
     runs-on: ubuntu-latest
     steps:
       - name: ⬇ Checkout
@@ -54,17 +54,17 @@ jobs:
 ##################################
 
   check:
-    name: 🔀 Compare local <-> nightly (Nightly build only)
+    name: 🔀 Compare Repository with current master
     needs: [update_submodule]
     runs-on: ubuntu-latest
     steps:
-      - name: ⬇ Checkout
-        uses: actions/checkout@v3
+      - name: ⬇ Get current master head sha
+        run: echo "CURRENT_HEAD_SHA=$(git ls-remote https://github.com/hyperion-project/hyperion.ng HEAD | cut -f1 | cut -c-7)" >> $GITHUB_ENV
 
       - name: ✅ Check if commit has changed (APT)
         id: apt-build-necessary
         run: |
-          if wget --spider "https://nightly.apt.releases.hyperion-project.org//$(git rev-parse --short HEAD)" 2>/dev/null; then
+          if wget --spider "https://nightly.apt.releases.hyperion-project.org/${{ env.CURRENT_HEAD_SHA }}" 2>/dev/null; then
               echo "commit-has-changed=false" >> $GITHUB_OUTPUT
           else
               echo "commit-has-changed=true" >> $GITHUB_OUTPUT
@@ -73,7 +73,7 @@ jobs:
       - name: ✅ Check if commit has changed (DNF)
         id: dnf-build-necessary
         run: |
-          if wget --spider "https://nightly.dnf.releases.hyperion-project.org/$(git rev-parse --short HEAD)" 2>/dev/null; then
+          if wget --spider "https://nightly.dnf.releases.hyperion-project.org/${{ env.CURRENT_HEAD_SHA }}" 2>/dev/null; then
               echo "commit-has-changed=false" >> $GITHUB_OUTPUT
           else
               echo "commit-has-changed=true" >> $GITHUB_OUTPUT
@@ -81,6 +81,7 @@ jobs:
     outputs:
       build-apt-nightly: ${{ steps.apt-build-necessary.outputs.commit-has-changed }}
       build-dnf-nightly: ${{ steps.dnf-build-necessary.outputs.commit-has-changed }}
+      current-head-sha: ${{ env.CURRENT_HEAD_SHA }}
 
   # Build DEB Packages for APT Repository
   deb_build:
@@ -90,6 +91,7 @@ jobs:
     uses: ./.github/workflows/build_deb.yml
     secrets: inherit
     with:
+      head_sha: ${{ needs.check.outputs.current-head-sha }}
       nightly: true
       upload: true
 
@@ -101,6 +103,7 @@ jobs:
     uses: ./.github/workflows/build_rpm.yml
     secrets: inherit
     with:
+      head_sha: ${{ needs.check.outputs.current-head-sha }}
       nightly: true
       upload: true
 
@@ -112,5 +115,6 @@ jobs:
     uses: ./.github/workflows/publish_deb_rpm.yml
     secrets: inherit
     with:
+      head_sha: ${{ needs.check.outputs.current-head-sha }}
       nightly: true
       publish: true
