@@ -59,7 +59,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: ⬇ Get current master head sha
-        run: echo "CURRENT_HEAD_SHA=$(git ls-remote https://github.com/hyperion-project/hyperion.ng HEAD | cut -f1 | cut -c-7)" >> $GITHUB_ENV
+        run: echo "CURRENT_HEAD_SHA=$(git ls-remote https://github.com/hyperion-project/hyperion.ng HEAD)" >> $GITHUB_ENV
 
       - name: ✅ Check if commit has changed (APT)
         id: apt-build-necessary
