@@ -91,7 +91,6 @@ jobs:
     uses: ./.github/workflows/build_deb.yml
     secrets: inherit
     with:
-      head_sha: ${{ needs.check.outputs.current-head-sha }}
       nightly: true
       upload: true
 
@@ -103,7 +102,6 @@ jobs:
     uses: ./.github/workflows/build_rpm.yml
     secrets: inherit
     with:
-      head_sha: ${{ needs.check.outputs.current-head-sha }}
       nightly: true
       upload: true
 
