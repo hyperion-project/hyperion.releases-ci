@@ -4,6 +4,7 @@ name: 🌑️ Nightly builds
 on:
   schedule:
     - cron: '0 0 * * *'
+  workflow_dispatch:
 
 jobs:
 
@@ -57,14 +58,19 @@ jobs:
     name: 🔀 Compare Repository with current master
     needs: [update_submodule]
     runs-on: ubuntu-latest
+    outputs:
+      build-apt-nightly: ${{ steps.apt-build-necessary.outputs.commit-has-changed }}
+      build-dnf-nightly: ${{ steps.dnf-build-necessary.outputs.commit-has-changed }}
+      current-head-sha: ${{ steps.determine-head-sha.outputs.head-sha }}
     steps:
       - name: ⬇ Get current master head sha
-        run: echo "CURRENT_HEAD_SHA=$(git ls-remote https://github.com/hyperion-project/hyperion.ng HEAD)" >> $GITHUB_ENV
+        id: determine-head-sha
+        run: echo "head-sha=$(git ls-remote https://github.com/hyperion-project/hyperion.ng HEAD | cut -f 1)" >> $GITHUB_OUTPUT
 
       - name: ✅ Check if commit has changed (APT)
         id: apt-build-necessary
         run: |
-          if wget --spider "https://nightly.apt.releases.hyperion-project.org/${{ env.CURRENT_HEAD_SHA }}" 2>/dev/null; then
+          if wget --spider "https://nightly.apt.releases.hyperion-project.org/${{ steps.determine-head-sha.outputs.head-sha }}" 2>/dev/null; then
               echo "commit-has-changed=false" >> $GITHUB_OUTPUT
           else
               echo "commit-has-changed=true" >> $GITHUB_OUTPUT
@@ -73,15 +79,11 @@ jobs:
       - name: ✅ Check if commit has changed (DNF)
         id: dnf-build-necessary
         run: |
-          if wget --spider "https://nightly.dnf.releases.hyperion-project.org/${{ env.CURRENT_HEAD_SHA }}" 2>/dev/null; then
+          if wget --spider "https://nightly.dnf.releases.hyperion-project.org/${{ steps.determine-head-sha.outputs.head-sha }}" 2>/dev/null; then
               echo "commit-has-changed=false" >> $GITHUB_OUTPUT
           else
               echo "commit-has-changed=true" >> $GITHUB_OUTPUT
           fi
-    outputs:
-      build-apt-nightly: ${{ steps.apt-build-necessary.outputs.commit-has-changed }}
-      build-dnf-nightly: ${{ steps.dnf-build-necessary.outputs.commit-has-changed }}
-      current-head-sha: ${{ env.CURRENT_HEAD_SHA }}
 
   # Build DEB Packages for APT Repository
   deb_build:
@@ -91,6 +93,7 @@ jobs:
     uses: ./.github/workflows/build_deb.yml
     secrets: inherit
     with:
+      head_sha: ${{ needs.check.outputs.current-head-sha }}
       nightly: true
       upload: true
 
@@ -102,6 +105,7 @@ jobs:
     uses: ./.github/workflows/build_rpm.yml
     secrets: inherit
     with:
+      head_sha: ${{ needs.check.outputs.current-head-sha }}
       nightly: true
       upload: true
 
