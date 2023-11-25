@@ -1,79 +1,131 @@
-#!/bin/sh -e
+#!/bin/bash
 #
 # Hyperion installation script.
 #
 # This script is meant for quick & easy install via:
-#   'curl -sSL https://releases.hyperion-project.org/install | sh'
+#   'curl -sSL https://releases.hyperion-project.org/install | bash'
 # or:
-#   'wget -qO- https://releases.hyperion-project.org/install | sh'
-#
-# This is based on get-stack.sh which is Copyright (c) 2015-2023, Stack contributors.
-# https://github.com/commercialhaskell/stack/blob/master/etc/scripts/get-stack.sh
+#   'wget -qO- https://releases.hyperion-project.org/install | bash'
 #
 
-# print a message to stderr and exit with error code
-die() {
-  echo "$@" >&2
+# Nightly prefix
+_NIGHTLY=""
+# Switch to install or remove
+_REMOVE=false
+# Verbose output
+_VERBOSE=false
+# Alternate codebase
+_CODEBASE=""
+
+BASE_REPO_URI="releases.hyperion-project.org"
+DISTRO=""
+
+# Help print function
+function printHelp {
+  cat <<EOL
+The script allows installing and removing Hyperion.
+
+Options:
+  -n, --nightly       Install the nightly build
+  -c, --codebase      Use an alternate codebase for Ubuntu derivatives, e.g., use "jammy" for Pop!_OS 22.04 LTS
+  -r, --remove        Remove an existing Hyperion installation
+  -v, --verbose       Run the script in verbose mode
+  -h, --help          Show this help message
+EOL
+}
+
+function debug() {
+  if ${_VERBOSE}; then
+    echo "DEBUG: $@"
+  fi
+}
+
+function info() {
+  echo "INFO : $@"
+}
+
+# Print a message to stderr and exit with an error code
+function error() {
+  echo "ERROR: $@" >&2
   exit 1
 }
 
-# determines the CPU's instruction set architecture (ISA)
-get_isa() {
-  if uname -m | grep -Eq 'armv[78]l?' ; then
-    echo armhf
-  elif uname -m | grep -q aarch64 ; then
-    echo arm64
-  elif uname -m | grep -q arm64 ; then
-    echo arm64
-  elif uname -m | grep -q x86 ; then
-    echo amd64
-  else
-    die "$(uname -m) is not a supported instruction set"
-  fi
+function prompt() {
+  while true; do
+    read -p "$1 " yn
+    case "${yn,,}" in
+      [yes]* ) return 1;;
+      [no]* ) return 0;;
+      * ) echo "Please answer Yes or No.";;
+    esac
+  done
 }
 
-# exits with code 0 if arm ISA is detected as described above
-is_arm() {
-  test "$(get_isa)" = armhf
-}
+function get_architecture() {
+  # Determine the current architecture
+  CURRENT_ARCHITECTURE=$(uname -m)
 
-# exits with code 0 if aarch64 ISA is detected as described above
-is_aarch64() {
-  test "$(get_isa)" = arm64
-}
-
-# determines 64- or 32-bit architecture
-# if getconf is available, it will return the arch of the OS, as desired
-# if not, it will use uname to get the arch of the CPU, though the installed
-# OS could be 32-bits on a 64-bit CPU
-get_arch() {
-  if has_getconf ; then
-    if getconf LONG_BIT | grep -q 64 ; then
-      echo 64
+  # Test if multiarchitecture setup, i.e., user-space is 32-bit
+  if [ "${CURRENT_ARCHITECTURE}" == "aarch64" ]; then
+    CURRENT_ARCHITECTURE="arm64"
+    USER_ARCHITECTURE=${CURRENT_ARCHITECTURE}
+    IS_V7L=$(grep -m1 -c v7l /proc/$$/maps)
+    if [ $IS_V7L -ne 0 ]; then
+      USER_ARCHITECTURE="armv7"
     else
-      echo 32
+      IS_V6L=$(grep -m1 -c v6l /proc/$$/maps)
+      if [ $IS_V6L -ne 0 ]; then
+        USER_ARCHITECTURE="armv6"
+      fi
+    fi
+    if [ "$ARCHITECTURE" != "$USER_ARCHITECTURE" ]; then
+      CURRENT_ARCHITECTURE=$USER_ARCHITECTURE
     fi
   else
-    case "$(uname -m)" in
-      *64)
-        echo 64
-        ;;
-      *)
-        echo 32
-        ;;
-    esac
+    CURRENT_ARCHITECTURE=${CURRENT_ARCHITECTURE//x86_/amd}
   fi
+  echo "${CURRENT_ARCHITECTURE}"
 }
 
-# exits with code 0 if a x86_64-bit architecture is detected as described above
-is_x86_64() {
-  test "$(get_arch)" = 64 -a "$(get_isa)" = "amd64"
+check_architecture() {
+  # Checks if the current architecture is supported
+  distro="$1"; shift
+
+  valid_architectures=''
+  case "$distro" in
+    debian|ubuntu|raspbian)
+      valid_architectures='armv6l, armv7l, arm64, amd64';
+      ;;
+    fedora)
+      valid_architectures='amd64';
+      ;;
+    *)
+      error "Unsupported distribution: ${distro}"
+      ;;
+  esac
+
+  current_architecture=$(get_architecture)
+  debug "Current architecture: ${current_architecture}"
+
+  echo "${valid_architectures}" | grep -qw "${current_architecture}"
+
+  if [ $? -ne 0 ]; then
+    error "Only ${valid_architectures} architecture(s) are supported for ${distro}. You are running on ${current_architecture}"
+  fi
+
+  return 0
+}
+
+function get_distro() {
+  # Determine the used Linux distribution.
+  distro=$(lsb_release -si 2>/dev/null || cat /etc/os-release | grep -oP '(?<=^ID=)\w+' || echo "unknown" | tr '[:upper:]' '[:lower:]')
+  echo "${distro}"
 }
 
 # Adds a 'sudo' prefix if sudo is available to execute the given command
 # If not, the given command is run as is
 # When requesting root permission, always show the command and never re-use cached credentials.
-sudocmd() {
+function sudocmd() {
   reason="$1"; shift
   if command -v sudo >/dev/null; then
     echo
@@ -81,193 +133,228 @@ sudocmd() {
     echo "    $@"
     echo "in order to $reason."
     echo
-    sudo -k "$@" # -k: Disable cached credentials (force prompt for password).
+    sudo "$@"
   else
     "$@"
   fi
 }
 
 # Attempts an install on Debian/Ubuntu via apt, if possible
-do_debian_ubuntu_install() {
-  if is_arm || is_x86_64 || is_aarch64 ; then
-    info "Installing dependencies..."
-    info ""
-    apt_get_install_pkgs gpg apt-transport-https
+function install_deb_package() {
+  debug "Start installation via Debian package ${_NIGHTLY}"
+  info "Installing dependencies..."
+  apt_get_install_pkgs gpg apt-transport-https
 
-    info "Integrate Repository..."
-    info ""
-    DOWNLOAD_GPG_KEY="curl --silent --show-error --location 'https://releases.hyperion-project.org/hyperion.pub.key' | gpg --dearmor -o /etc/apt/keyrings/hyperion.pub.gpg"
-    if ! sudocmd "download public gpg key from Hyperion Project repository" sh -c '$DOWNLOAD_GPG_KEY'; then
-      die "\nFailed to download the public key from the Hyperion Project Repository. Please run 'apt-get update' and try again."
-    fi
+  info "Integrate Repository..."
+  DOWNLOAD_GPG_KEY="curl --silent --show-error --location "https://${BASE_REPO_URI}/hyperion.pub.key" | gpg --dearmor -o /etc/apt/keyrings/hyperion.pub.gpg"
+  if ! sudocmd "download public gpg key from Hyperion Project repository" sh -c "$DOWNLOAD_GPG_KEY"; then
+    error "Failed to download the public key from the Hyperion Project Repository. Please run 'apt-get update' and try again."
+  fi
 
-    ARCHITECTURE="$(get_isa)"
-    DEB822="Name: Hyperion\nEnabled: yes\nTypes: deb\nURIs: https://apt.releases.hyperion-project.org\nComponents: main\nArchitectures: $ARCHITECTURE\nSigned-By: /etc/apt/keyrings/hyperion.pub.gpg"
-    if ! sudocmd "add Hyperion Project repository to the system" printf '$DEB822' > /etc/apt/sources.list.d/hyperion.sources; then
-      die "\nFailed to add the Hyperion Project Repository. Please run 'apt-get update' and try again."
-    fi
+  suites=$(lsb_release -cs)
+  if [ -n "${_CODEBASE}" ]; then
+    info "Overwrite identified codebase ${suites} with ${_CODEBASE}"
+    suites=${_CODEBASE}
+  fi
 
-    info "Install Hyperion..."
-    info ""
-    if ! sudocmd "install hyperion" sh -c 'apt-get update && apt-get -y install hyperion'; then
-      die "\nFailed to install Hyperion. Please run 'apt-get update' and try again."
-    fi
-  else
-    die "Sorry, only arm, x86_64 and aarch64 Linux binaries are currently available."
+  DEB822="X-Repolib Name: Hyperion
+Enabled: yes
+Types: deb
+URIs: https://${_NIGHTLY}apt.${BASE_REPO_URI}
+Components: main
+Suites: ${suites}
+Signed-By: /etc/apt/keyrings/hyperion.pub.gpg"
+
+  if ! sudocmd "add Hyperion Project repository to the system" tee "/etc/apt/sources.list.d/hyperion.${_NIGHTLY}sources" <<< "$DEB822"; then
+    error "Failed to add the Hyperion Project Repository. Please run 'apt-get update' and try again."
+  fi
+
+  info "Install Hyperion..."
+  info ""
+  if ! sudocmd "install hyperion" sh -c "apt-get update && apt-get -y install hyperion"; then
+    error "Failed to install Hyperion. Please run 'apt-get update' and try again."
+  fi
+}
+
+# Attempts an uninstall on Debian/Ubuntu via apt, if possible
+function uninstall_deb_package() {
+  debug "Start uninstall via Debian package"
+
+  info "Uninstall Hyperion..."
+  info ""
+  if ! sudocmd "uninstall hyperion" sh -c "apt-get --purge autoremove hyperion"; then
+    error "Failed to uninstall Hyperion. Please try again."
+  fi
+
+  if ! sudocmd "remove the Hyperion-Project APT source from your system" sh -c "rm -f /usr/share/keyrings/hyperion.pub.gpg /etc/apt/sources.list.d/hyperion.${_NIGHTLY}sources"; then
+    error "Failed to remove the Hyperion Project Repository. Please check the log for any errors."
   fi
 }
 
 # Attempts an install on Fedora via dnf, if possible
-do_fedora_install() {
-  if is_x86_64 ; then
-    info "Installing dependencies..."
-    info ""
-    if ! sudocmd "install required system dependencies" dnf -q install -y dnf-plugins-core; then
-      die "\nFailed to install required system dependencies. Please run 'dnf check-update' and try again."
-    fi
+function install_dnf_package() {
+  debug "Start installation via DNF package ${_NIGHTLY}"
+  info "Installing dependencies..."
+  info ""
+  if ! sudocmd "install required system dependencies" dnf -q install -y dnf-plugins-core; then
+    error "Failed to install required system dependencies. Please run 'dnf check-update' and try again."
+  fi
 
-    info "Integrate Hyperion Project Repository..."
-    info ""
-    if ! sudocmd "add Hyperion Project repository to the system:" dnf -q -y config-manager --add-repo https://dnf.releases.hyperion-project.org/fedora/hyperion.repo; then
-      die "\nFailed to add the Hyperion Project Repository. Please run 'dnf check-update' and try again."
-    fi
+  info "Integrate Hyperion Project Repository..."
+  info ""
+  if ! sudocmd "add Hyperion Project repository to the system:" dnf -q -y config-manager --add-repo https://${_NIGHTLY}dnf.${BASE_REPO_URI}/fedora/hyperion.repo; then
+    error "Failed to add the Hyperion Project Repository. Please run 'dnf check-update' and try again."
+  fi
 
-    info "Install Hyperion..."
-    info ""
-    if ! sudocmd "install hyperion" dnf -y install hyperion; then
-      die "\nFailed to install Hyperion. Please run 'dnf check-update' and try again."
-    fi
-  else
-    die "Sorry, only 64-bit (x86_64) Linux binaries are currently available."
+  info "Install Hyperion..."
+  info ""
+  if ! sudocmd "install hyperion" dnf -y install hyperion; then
+    error "Failed to install Hyperion. Please run 'dnf check-update' and try again."
   fi
 }
 
-# Attempts to determine the running Linux distribution.
-# Prints "DISTRO" (distribution name).
-distro_info() {
-  parse_lsb() {
-    lsb_release -a 2> /dev/null | perl -ne "$1"
-  }
+# Attempts an uninstall on Fedora via dnf, if possible
+function uninstall_dnf_package() {
+  debug "Start uninstall via DNF package"
 
-  try_lsb() {
-    if has_lsb_release ; then
-      TL_DIST="$(parse_lsb 'if(/Distributor ID:\s+([^ ]+)/) { print "\L$1"; }')"
-      echo "$TL_DIST"
-    else
-      return 1
-    fi
-  }
+  info "Uninstall Hyperion..."
+  info ""
+  if ! sudocmd "uninstall hyperion" sh -c "dnf -y remove hyperion"; then
+    error "Failed to uninstall Hyperion. Please try again."
+  fi
 
-  try_release() {
-    parse_release() {
-      perl -ne "$1" /etc/*release 2>/dev/null
-    }
-
-    parse_release_id() {
-      parse_release 'if(/^(DISTRIB_)?ID\s*=\s*"?([^"]+)/) { print "\L$2"; exit 0; }'
-    }
-
-    TR_RELEASE="$(parse_release_id)"
-
-    if [ ";" = "$TR_RELEASE" ] ; then
-      return 1
-    else
-      echo "$TR_RELEASE"
-    fi
-  }
-
-  try_lsb || try_release
+  if ! sudocmd "remove the Hyperion-Project repository from your system" sh -c "rm -f /etc/yum.repos.d/hyperion.repo"; then
+    error "Failed to remove the Hyperion Project Repository. Please check the log for any errors."
+  fi
 }
 
 # Attempt to install on a Linux distribution
-do_install() {
-  if [ "$(uname)" != "Linux" ] ; then
-    die "Sorry, this installer does not support your operating system: $(uname).
-See https://docs.hyperion-project.org/en/user/Installation.html"
+function install_hyperion() {
+
+  if check_hyperion_installed ; then
+    info "Hyperion $(installed_hyperion_version) is already installed. Use your OS's package manager to upgrade."
+    exit 1
   fi
 
-  IFS=";" read -r DISTRO <<GETDISTRO
-$(distro_info)
-GETDISTRO
-
-  if [ -n "$DISTRO" ] ; then
-    info "Detected Linux distribution: $DISTRO"
-    info ""
+  if check_architecture "${DISTRO}"; then
+    case "$DISTRO" in
+      debian|ubuntu|raspbian)
+        install_deb_package
+        ;;
+      fedora)
+        install_dnf_package
+        ;;
+      *)
+        error "Sorry, this installer doesn't support your Linux distribution."
+    esac
   fi
+}
 
-  case "$DISTRO" in
+function uninstall_hyperion() {
+  if ! check_hyperion_installed ; then
+    error "Hyperion cannot be found and therefore cannot be removed."
+  fi  
+
+  info "Found Hyperion $(installed_hyperion_version)"
+
+  if prompt 'Are you sure you want to remove Hyperion? [Yes/No]'; then
+    info 'No updates will be done. Exiting...'
+    exit 99
+  fi
+  
+  case  ${DISTRO} in
     debian|ubuntu|raspbian)
-      do_debian_ubuntu_install
+      uninstall_deb_package
       ;;
     fedora)
-      do_fedora_install
+      uninstall_dnf_package
       ;;
     *)
-      die "Sorry, this installer doesn't support your Linux distribution."
-  esac
+      error "Sorry, this installer doesn't support your Linux distribution."
+    esac
 }
 
 # Install packages using apt-get
 apt_get_install_pkgs() {
   missing=
   for pkg in $*; do
-    if ! dpkg -s $pkg 2>/dev/null |grep '^Status:.*installed' >/dev/null; then
+    if ! dpkg -s "$pkg" 2>/dev/null | grep '^Status:.*installed' >/dev/null; then
       missing="$missing $pkg"
     fi
   done
   if [ "$missing" = "" ]; then
-    info "Already installed!"
+    debug "Packages '$*' already installed!"
   elif ! sudocmd "install required system dependencies" apt-get -qq install -y $missing; then
-    die "\nInstalling apt packages failed.  Please run 'apt-get update' and try again."
+    error "\nInstalling apt packages failed.  Please run 'apt-get update' and try again."
   fi
 }
 
 # Get installed Hyperion version
-installed_hyperion_version() {
-  hyperiond --version | grep -o 'Version \([[:digit:]]\|\.\)\+' | tr A-Z a-z
+function installed_hyperion_version() {
+  hyperiond --version | grep -oP 'Version\s+:\s+\K[^\s]+'
 }
 
-# Check whether 'hyperiond' command exists
-has_hyperion() {
-    has_cmd hyperiond
-}
-
-# Check whether 'lsb_release' command exists
-has_lsb_release() {
-  has_cmd lsb_release
-}
-
-# Check whether 'sudo' command exists
-has_sudo() {
-  has_cmd sudo
-}
-
-# Check whether 'getconf' command exists
-has_getconf() {
-  has_cmd getconf
-}
-
-# Check whether 'apt-get' command exists
-has_apt_get() {
-  has_cmd apt-get
-}
-
-# Check whether 'dnf' command exists
-has_dnf() {
-  has_cmd dnf
+# Check whether Hyperion is installed
+function check_hyperion_installed() {
+  has_cmd hyperiond
 }
 
 # Check whether the given command exists
-has_cmd() {
+function has_cmd() {
   command -v "$1" > /dev/null 2>&1
 }
 
-# Check whether Hyperion is already installed, and print an error if it is.
-check_hyperion_installed() {
-  if has_hyperion ; then
-    die "Hyperion $(installed_hyperion_version) already appears to be installed. Use your OS's package manager to upgrade."
-  fi
-}
+############################################
+# Main
+############################################
 
-check_hyperion_installed
-do_install
+options=$(getopt -l "nightly,codebase:,remove,verbose,help" -o "nc:rvh" -a -- "$@")
+
+eval set -- "$options"
+while true; do
+  case $1 in
+    -n|--nightly)
+      _NIGHTLY="nightly."
+      ;;
+    -c|--codebase)
+      shift
+      _CODEBASE=$1    
+      ;;
+    -r|--remove)
+      _REMOVE=true
+      ;;
+    -v|--verbose)
+      _VERBOSE=true
+      ;;
+    -h|--help)
+      printHelp
+      exit 0
+      ;;
+    --)
+      shift
+      break;;
+  esac
+  shift
+done
+
+# Check, if executed under Linux
+if [ "$(uname)" != "Linux" ] ; then
+    error "Sorry, this installer does not support your operating system: $(uname).
+See https://docs.hyperion-project.org/en/user/Installation.html"
+fi
+
+# Determine the used Linux distribution.
+DISTRO=$(get_distro)
+if [ -n "$DISTRO" ] ; then
+  debug "Detected Linux distribution: ${DISTRO}"
+fi
+
+if $_REMOVE; then
+  uninstall_hyperion
+else
+  install_hyperion
+fi
+
+info 'Done'
+exit 0
+
