@@ -32,7 +32,6 @@ Options:
   -n, --nightly       Install the nightly build
   -u, --ubuntu        Use an alternate codebase for Ubuntu derivatives, e.g., use "jammy" for Pop!_OS 22.04 LTS or Mint 21.2 Victoria
   -d, --debian        Use an alternate codebase for Debian derivatives
-  -f, --fedora        Use an alternate codebase for Fedora derivatives
   -r, --remove        Remove an existing Hyperion installation
   -v, --verbose       Run the script in verbose mode
   -h, --help          Show this help message
@@ -172,7 +171,7 @@ Suites: ${suites}
 Architectures: ${architectures}
 Signed-By: /etc/apt/keyrings/hyperion.pub.gpg"
 
-  if ! sudocmd "add Hyperion Project repository to the system" tee "/etc/apt/sources.list.d/hyperion.${_NIGHTLY}sources" <<< "$DEB822"; then
+  if ! sudocmd "add Hyperion Project repository to the system" tee "/etc/apt/sources.list.d/hyperion.sources" <<< "$DEB822"; then
     error "Failed to add the Hyperion Project Repository. Please run 'apt-get update' and try again."
   fi
 
@@ -193,7 +192,7 @@ function uninstall_deb_package() {
     error "Failed to uninstall Hyperion. Please try again."
   fi
 
-  if ! sudocmd "remove the Hyperion-Project APT source from your system" sh -c "rm -f /usr/share/keyrings/hyperion.pub.gpg /etc/apt/sources.list.d/hyperion.${_NIGHTLY}sources"; then
+  if ! sudocmd "remove the Hyperion-Project APT source from your system" sh -c "rm -f /usr/share/keyrings/hyperion.pub.gpg /etc/apt/sources.list.d/hyperion.sources"; then
     error "Failed to remove the Hyperion Project Repository. Please check the log for any errors."
   fi
 }
@@ -211,15 +210,6 @@ function install_dnf_package() {
   info ""
   if ! sudocmd "add Hyperion Project repository to the system:" dnf -q -y config-manager --add-repo https://${_NIGHTLY}dnf.${_BASE_REPO_URI}/fedora/hyperion.repo; then
     error "Failed to add the Hyperion Project Repository. Please run 'dnf check-update' and try again."
-  fi
-
-  if [ -n "${_CODEBASE}" ]; then
-    version=$(cat /etc/os-release | grep -oP '^VERSION_ID=["\"]?\K\w+')
-    info "Overwrite identified version \"${version}\" with \"${_CODEBASE}\""
-
-    if ! sudocmd "set a new release version": dnf -q -y config-manager --setopt=hyperion.releasever=${_CODEBASE} --save; then
-      error "Failed to overwrite by the fedora release version."
-    fi
   fi
 
   info "Install Hyperion..."
@@ -324,7 +314,7 @@ function has_cmd() {
 # Main
 ############################################
 
-options=$(getopt -l "nightly,debian:,fedora:,ubuntu:,remove,verbose,help" -o "nd:f:u:rvh" -a -- "$@")
+options=$(getopt -l "nightly,debian:,ubuntu:,remove,verbose,help" -o "nd:u:rvh" -a -- "$@")
 
 eval set -- "$options"
 while true; do
@@ -335,11 +325,6 @@ while true; do
     -d|--debian)
       shift
       _DISTRO="debian"
-      _CODEBASE=$1
-      ;;
-    -f|--fedora)
-      shift
-      _DISTRO="fedora"
       _CODEBASE=$1
       ;;
     -u|--ubunutu)
