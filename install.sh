@@ -8,17 +8,20 @@
 #   'wget -qO- https://releases.hyperion-project.org/install | bash'
 #
 
+# Default values
+
 # Nightly prefix
 _NIGHTLY=""
 # Switch to install or remove
 _REMOVE=false
 # Verbose output
 _VERBOSE=false
+#Distribution
+_DISTRO=""
 # Alternate codebase
 _CODEBASE=""
-
-BASE_REPO_URI="releases.hyperion-project.org"
-DISTRO=""
+# Package repository uri
+_BASE_REPO_URI="releases.hyperion-project.org"
 
 # Help print function
 function printHelp {
@@ -27,7 +30,9 @@ The script allows installing and removing Hyperion.
 
 Options:
   -n, --nightly       Install the nightly build
-  -c, --codebase      Use an alternate codebase for Ubuntu derivatives, e.g., use "jammy" for Pop!_OS 22.04 LTS
+  -u, --ubuntu        Use an alternate codebase for Ubuntu derivatives, e.g., use "jammy" for Pop!_OS 22.04 LTS or Mint 21.2 Victoria
+  -d, --debian        Use an alternate codebase for Debian derivatives
+  -f, --fedora        Use an alternate codebase for Fedora derivatives
   -r, --remove        Remove an existing Hyperion installation
   -v, --verbose       Run the script in verbose mode
   -h, --help          Show this help message
@@ -100,7 +105,7 @@ check_architecture() {
       valid_architectures='amd64';
       ;;
     *)
-      error "Unsupported distribution: ${distro}"
+      error "Unsupported distribution: ${distro}. You might need to run the script providing your underlying distribution, i.e. ubuntu, debian or fedora and its codebase."
       ;;
   esac
 
@@ -118,7 +123,7 @@ check_architecture() {
 
 function get_distro() {
   # Determine the used Linux distribution.
-  distro=$(lsb_release -si 2>/dev/null || cat /etc/os-release | grep -oP '(?<=^ID=)\w+' || echo "unknown")
+  distro=$(lsb_release -si 2>/dev/null || cat /etc/os-release | grep -oP '^ID=["\"]?\K\w+' || echo "unknown")
   echo ${distro} | tr '[:upper:]' '[:lower:]'
 }
 
@@ -146,23 +151,25 @@ function install_deb_package() {
   apt_get_install_pkgs gpg apt-transport-https
 
   info "Integrate Repository..."
-  DOWNLOAD_GPG_KEY="curl --silent --show-error --location "https://${BASE_REPO_URI}/hyperion.pub.key" | gpg --dearmor -o /etc/apt/keyrings/hyperion.pub.gpg"
+  DOWNLOAD_GPG_KEY="mkdir -p '/etc/apt/keyrings/' && curl --silent --show-error --location "https://${_BASE_REPO_URI}/hyperion.pub.key" | gpg --dearmor --batch --yes -o /etc/apt/keyrings/hyperion.pub.gpg"
   if ! sudocmd "download public gpg key from Hyperion Project repository" sh -c "$DOWNLOAD_GPG_KEY"; then
     error "Failed to download the public key from the Hyperion Project Repository. Please run 'apt-get update' and try again."
   fi
 
   suites=$(lsb_release -cs)
   if [ -n "${_CODEBASE}" ]; then
-    info "Overwrite identified codebase ${suites} with ${_CODEBASE}"
+    info "Overwrite identified codebase \"${suites}\" with \"${_CODEBASE}\""
     suites=${_CODEBASE}
   fi
 
+  architectures="$(get_architecture)"
   DEB822="X-Repolib Name: Hyperion
 Enabled: yes
 Types: deb
-URIs: https://${_NIGHTLY}apt.${BASE_REPO_URI}
+URIs: https://${_NIGHTLY}apt.${_BASE_REPO_URI}
 Components: main
 Suites: ${suites}
+Architectures: ${architectures}
 Signed-By: /etc/apt/keyrings/hyperion.pub.gpg"
 
   if ! sudocmd "add Hyperion Project repository to the system" tee "/etc/apt/sources.list.d/hyperion.${_NIGHTLY}sources" <<< "$DEB822"; then
@@ -202,8 +209,17 @@ function install_dnf_package() {
 
   info "Integrate Hyperion Project Repository..."
   info ""
-  if ! sudocmd "add Hyperion Project repository to the system:" dnf -q -y config-manager --add-repo https://${_NIGHTLY}dnf.${BASE_REPO_URI}/fedora/hyperion.repo; then
+  if ! sudocmd "add Hyperion Project repository to the system:" dnf -q -y config-manager --add-repo https://${_NIGHTLY}dnf.${_BASE_REPO_URI}/fedora/hyperion.repo; then
     error "Failed to add the Hyperion Project Repository. Please run 'dnf check-update' and try again."
+  fi
+
+  if [ -n "${_CODEBASE}" ]; then
+    version=$(cat /etc/os-release | grep -oP '^VERSION_ID=["\"]?\K\w+')
+    info "Overwrite identified version \"${version}\" with \"${_CODEBASE}\""
+
+    if ! sudocmd "set a new release version": dnf -q -y config-manager --setopt=hyperion.releasever=${_CODEBASE} --save; then
+      error "Failed to overwrite by the fedora release version."
+    fi
   fi
 
   info "Install Hyperion..."
@@ -236,8 +252,8 @@ function install_hyperion() {
     exit 1
   fi
 
-  if check_architecture "${DISTRO}"; then
-    case "$DISTRO" in
+  if check_architecture "${_DISTRO}"; then
+    case "$_DISTRO" in
       debian|ubuntu|raspbian)
         install_deb_package
         ;;
@@ -251,9 +267,9 @@ function install_hyperion() {
 }
 
 function uninstall_hyperion() {
-  if ! check_hyperion_installed ; then
+  if ! check_hyperion_installed; then
     error "Hyperion cannot be found and therefore cannot be removed."
-  fi  
+  fi
 
   info "Found Hyperion $(installed_hyperion_version)"
 
@@ -261,8 +277,8 @@ function uninstall_hyperion() {
     info 'No updates will be done. Exiting...'
     exit 99
   fi
-  
-  case  ${DISTRO} in
+
+  case  "${_DISTRO}" in
     debian|ubuntu|raspbian)
       uninstall_deb_package
       ;;
@@ -308,7 +324,7 @@ function has_cmd() {
 # Main
 ############################################
 
-options=$(getopt -l "nightly,codebase:,remove,verbose,help" -o "nc:rvh" -a -- "$@")
+options=$(getopt -l "nightly,debian:,fedora:,ubuntu:,remove,verbose,help" -o "nd:f:u:rvh" -a -- "$@")
 
 eval set -- "$options"
 while true; do
@@ -316,9 +332,20 @@ while true; do
     -n|--nightly)
       _NIGHTLY="nightly."
       ;;
-    -c|--codebase)
+    -d|--debian)
       shift
-      _CODEBASE=$1    
+      _DISTRO="debian"
+      _CODEBASE=$1
+      ;;
+    -f|--fedora)
+      shift
+      _DISTRO="fedora"
+      _CODEBASE=$1
+      ;;
+    -u|--ubunutu)
+      shift
+      _DISTRO="ubuntu"
+      _CODEBASE=$1
       ;;
     -r|--remove)
       _REMOVE=true
@@ -344,9 +371,12 @@ See https://docs.hyperion-project.org/en/user/Installation.html"
 fi
 
 # Determine the used Linux distribution.
-DISTRO=$(get_distro)
-if [ -n "$DISTRO" ] ; then
-  debug "Detected Linux distribution: ${DISTRO}"
+distro=$(get_distro)
+if [ -n "${_DISTRO}" ]; then
+  info "Overwrite identified distribution \"${distro}\" with \"${_DISTRO}\""
+else
+  _DISTRO=${distro}
+  info "Identified distribution \"${_DISTRO}\""
 fi
 
 if $_REMOVE; then
