@@ -62,7 +62,8 @@ jobs:
         run: |
           echo '::group::Checking the version number'
             if [[ "${{ inputs.nightly }}" = true ]]; then
-              echo VERSION=$(tr -d '\n' < .version | sed s/-/_/g)+nightly$(date '+%Y%m%d')${{ inputs.head_sha }} >> $GITHUB_ENV
+              echo "$(tr -d '\n' < .version | sed s/-/_/g)+nightly$(date '+%Y%m%d')${{ inputs.head_sha }}" > .version
+              echo VERSION=$(cat .version) >> $GITHUB_ENV
             else
               echo VERSION=$(tr -d '\n' < .version | sed s/-/_/g) >> $GITHUB_ENV
             fi
