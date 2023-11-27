@@ -55,14 +55,20 @@ function error() {
 }
 
 function prompt() {
-  while true; do
-    read -p "$1 " yn
-    case "${yn,,}" in
-      [yes]* ) return 1;;
-      [no]* ) return 0;;
-      * ) echo "Please answer Yes or No.";;
-    esac
-  done
+  if [ -t 0 ]; then
+    while true; do
+      read -p "$1 " yn
+      case "${yn,,}" in
+        [yes]* ) return 1;;
+        [no]* ) return 0;;
+        * ) echo "Please answer Yes or No.";;
+      esac
+    done
+  else
+    echo "$1 "
+    info "Non-interactive mode detected. Assuming default response (Yes)."
+    return 1
+  fi
 }
 
 function get_architecture() {
@@ -192,7 +198,7 @@ function uninstall_deb_package() {
     error "Failed to uninstall Hyperion. Please try again."
   fi
 
-  if ! sudocmd "remove the Hyperion-Project APT source from your system" sh -c "rm -f /usr/share/keyrings/hyperion.pub.gpg /etc/apt/sources.list.d/hyperion.sources"; then
+  if ! sudocmd "remove the Hyperion-Project APT source from your system" sh -c "rm -f /usr/share/keyrings/hyperion.pub.gpg /etc/apt/sources.list.d/hyperion.sources /etc/apt/sources.list.d/hyperion.list"; then
     error "Failed to remove the Hyperion Project Repository. Please check the log for any errors."
   fi
 }
@@ -314,40 +320,54 @@ function has_cmd() {
 # Main
 ############################################
 
-options=$(getopt -l "nightly,debian:,ubuntu:,remove,verbose,help" -o "nd:u:rvh" -a -- "$@")
+options=$(getopt -l "nightly,debian:,ubuntu:,remove,verbose,help" -o "nd:u:rvh" -n "install.sh" -a -- "$@")
+
+if [ $? -ne 0 ]; then
+  echo "Error: Invalid option provided."
+  printHelp
+  exit 1
+fi
 
 eval set -- "$options"
 while true; do
-  case $1 in
-    -n|--nightly)
+  case "${1}" in
+    (-n|--nightly)
       _NIGHTLY="nightly."
-      ;;
-    -d|--debian)
-      shift
+    ;;
+    (-d|--debian)
       _DISTRO="debian"
       _CODEBASE=$1
-      ;;
-    -u|--ubunutu)
       shift
+    ;;
+    (-u|--ubunutu)
       _DISTRO="ubuntu"
       _CODEBASE=$1
-      ;;
-    -r|--remove)
+      shift
+    ;;
+    (-r|--remove)
       _REMOVE=true
-      ;;
-    -v|--verbose)
+    ;;
+    (-v|--verbose)
       _VERBOSE=true
       ;;
-    -h|--help)
+    (-h|--help)
       printHelp
       exit 0
-      ;;
-    --)
+    ;;
+    (--)
       shift
-      break;;
+      break
+    ;;
   esac
   shift
 done
+
+# Check for unrecognized options
+if [ "$#" -gt 0 ]; then
+  echo "Error: Unrecognized parameter: $1"
+  printHelp
+  exit 1
+fi
 
 # Check, if executed under Linux
 if [ "$(uname)" != "Linux" ] ; then
