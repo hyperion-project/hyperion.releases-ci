@@ -79,13 +79,13 @@ function get_architecture() {
   if [ "${CURRENT_ARCHITECTURE}" == "aarch64" ]; then
     CURRENT_ARCHITECTURE="arm64"
     USER_ARCHITECTURE=${CURRENT_ARCHITECTURE}
-    IS_V7L=$(grep -m1 -c v7l /proc/$$/maps)
-    if [ $IS_V7L -ne 0 ]; then
-      USER_ARCHITECTURE="armv7"
+    IS_ARMHF=$(grep -m1 -c armhf /proc/$$/maps)
+    if [ $IS_ARMHF -ne 0 ]; then
+      USER_ARCHITECTURE="armhf"
     else
-      IS_V6L=$(grep -m1 -c v6l /proc/$$/maps)
-      if [ $IS_V6L -ne 0 ]; then
-        USER_ARCHITECTURE="armv6"
+      IS_ARMEL=$(grep -m1 -c armel /proc/$$/maps)
+      if [ $IS_ARMEL -ne 0 ]; then
+        USER_ARCHITECTURE="armel"
       fi
     fi
     if [ "$ARCHITECTURE" != "$USER_ARCHITECTURE" ]; then
@@ -104,7 +104,7 @@ check_architecture() {
   valid_architectures=''
   case "$distro" in
     debian|ubuntu|raspbian)
-      valid_architectures='armv6l, armv7l, arm64, amd64';
+      valid_architectures='armel, armhf, arm64, amd64';
       ;;
     fedora)
       valid_architectures='amd64';
