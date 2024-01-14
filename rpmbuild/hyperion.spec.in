@@ -21,6 +21,8 @@ Vendor:         Hyperion Project
 Packager:       Hyperion-Project <admin@hyperion-project.org>
 
 # common build dependencies
+BuildRequires:  cmake
+BuildRequires:  ninja-build
 BuildRequires:  desktop-file-utils
 BuildRequires:  libappstream-glib
 BuildRequires:  qt6-qtbase-devel qt6-qtserialport-devel
@@ -72,8 +74,8 @@ It supports many LED devices and video grabbers.
 %setup -qn %{name}.ng
 
 %build
-cmake \
-  -S . -B build \
+cmake -G Ninja \
+  -B build \
   -DUSE_SYSTEM_PROTO_LIBS=ON \
   -DUSE_SYSTEM_FLATBUFFERS_LIBS=ON \
   -DUSE_SYSTEM_MBEDTLS_LIBS=ON \
@@ -81,10 +83,10 @@ cmake \
   -DCMAKE_BUILD_TYPE=Release \
   -DCMAKE_INSTALL_PREFIX:PATH=%{_prefix}
 
-make -C build -j 4
+cmake --build build --parallel $(nproc)
 
 %install
-%make_install -C build
+%ninja_install -C build
 
 # remove user entry (line 12) from systemd file (also in description)
 # sed -i '12d' %{buildroot}%{_datadir}/%{name}/service/%{name}.systemd

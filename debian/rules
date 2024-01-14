@@ -46,8 +46,8 @@ endif
 
 build:
 	[ -d $(BUILDDIR) ] || mkdir -p $(BUILDDIR)
-	cd $(BUILDDIR); cmake $(CMAKE_ENVIRONMENT) -DCMAKE_INSTALL_PREFIX=../$(TARGET)/usr ..
-	make -j$(shell nproc) -C $(BUILDDIR)
+	cmake -B build -G Ninja $(CMAKE_ENVIRONMENT) -DCMAKE_INSTALL_PREFIX=../$(TARGET)/usr
+	cmake --build build --parallel $(shell nproc)
 
 binary:
 	$(eval DETERMINED_DEPS=$(FIND_DEPENDS))
