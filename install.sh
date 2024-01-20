@@ -198,7 +198,7 @@ function uninstall_deb_package() {
     error "Failed to uninstall Hyperion. Please try again."
   fi
 
-  if ! sudocmd "remove the Hyperion-Project APT source from your system" sh -c "rm -f /usr/share/keyrings/hyperion.pub.gpg /etc/apt/sources.list.d/hyperion.sources /etc/apt/sources.list.d/hyperion.list"; then
+  if ! sudocmd "remove the Hyperion-Project APT source from your system" sh -c "rm -f /usr/share/keyrings/hyperion.pub.gpg /etc/apt/sources.list.d/hyperion*.sources /etc/apt/sources.list.d/hyperion*.list"; then
     error "Failed to remove the Hyperion Project Repository. Please check the log for any errors."
   fi
 }
