@@ -138,12 +138,22 @@ function get_distro() {
 function sudocmd() {
   reason="$1"; shift
   if command -v sudo >/dev/null; then
-    echo
-    echo "About to use 'sudo' to run the following command as root:"
-    echo "    $@"
-    echo "in order to $reason."
-    echo
-    sudo "$@"
+    # Check if sudo is required for the command
+    sudoRequired=$(sudo -l "$@" 2>/dev/null)
+    if [ $? -eq 0 ]; then
+      echo
+      echo "About to use 'sudo' to run the following command as root:"
+      echo "    $@"
+      echo "in order to $reason."
+      echo
+      sudo "$@"
+    else
+      echo
+      echo "Running the following command without 'sudo' since elevated privileges are not required:"
+      echo "    $@"
+      echo
+      "$@"
+    fi
   else
     "$@"
   fi
@@ -177,7 +187,7 @@ Suites: ${suites}
 Architectures: ${architectures}
 Signed-By: /etc/apt/keyrings/hyperion.pub.gpg"
 
-  if ! sudocmd "add Hyperion Project repository to the system" tee "/etc/apt/sources.list.d/hyperion.sources" <<< "$DEB822"; then
+  if ! sudocmd "add Hyperion Project repository to the system" echo "$DEB822" | sudo tee "/etc/apt/sources.list.d/hyperion.sources"; then
     error "Failed to add the Hyperion Project Repository. Please run 'apt-get update' and try again."
   fi
 
