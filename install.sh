@@ -88,7 +88,7 @@ function get_architecture() {
         USER_ARCHITECTURE="armel"
       fi
     fi
-    if [ "$ARCHITECTURE" != "$USER_ARCHITECTURE" ]; then
+    if [ "$CURRENT_ARCHITECTURE" != "$USER_ARCHITECTURE" ]; then
       CURRENT_ARCHITECTURE=$USER_ARCHITECTURE
     fi
   else
