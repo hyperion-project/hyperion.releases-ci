@@ -42,7 +42,7 @@ Origin: Hyperion-Project
 Label: releases.hyperion-project.org
 Suite: oldoldstable
 Codename: buster
-Architectures: amd64 armhf arm64 armel
+Architectures: amd64 armhf arm64
 Components: main
 Description: Official APT Repository by Hyperion Project
 SignWith: yes
