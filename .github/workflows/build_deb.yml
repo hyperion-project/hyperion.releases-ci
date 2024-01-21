@@ -55,8 +55,14 @@ jobs:
         exclude:
           - os: { distribution: ubuntu }
             architecture: [ armhf, linux/arm/v5 ]
-          - os: { distribution: debian }
+          - os: { distribution: debian, codename: buster, }
             architecture: [ armhf, linux/arm/v7 ]
+          - os: { distribution: debian, codename: bullseye, }
+            architecture: [ armhf, linux/arm/v7 ]
+          - os: { distribution: debian, codename: bookworm, }
+            architecture: [ armhf, linux/arm/v7 ]
+          - os: { distribution: debian, codename: trixie, } # Trixie armv6 not available yet (https://hub.docker.com/r/balenalib/rpi-raspbian/tags)
+            architecture: [ armhf, linux/arm/v5 ]
 
     steps:
       - name: ⬇ Checkout hyperion.ng
