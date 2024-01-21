@@ -49,8 +49,14 @@ jobs:
         architecture: [
           [ amd64, linux/amd64  ],
           [ arm64, linux/arm64  ],
+          [ armhf, linux/arm/v5 ],
           [ armhf, linux/arm/v7 ]
         ]
+        exclude:
+          - os: { distribution: ubuntu }
+            architecture: [ armhf, linux/arm/v5 ]
+          - os: { distribution: debian }
+            architecture: [ armhf, linux/arm/v7 ]
 
     steps:
       - name: ⬇ Checkout hyperion.ng
