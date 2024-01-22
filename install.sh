@@ -84,22 +84,25 @@ function get_architecture() {
 	# Test if multiarchitecture setup, i.e., user-space is 32-bit
 	if [ "${CURRENT_ARCHITECTURE}" == "aarch64" ]; then
 		CURRENT_ARCHITECTURE="arm64"
-	fi
-	USER_ARCHITECTURE=${CURRENT_ARCHITECTURE}
-	IS_ARMHF=$(grep -m1 -c armhf /proc/$$/maps)
-	if [ $IS_ARMHF -ne 0 ]; then
-		USER_ARCHITECTURE="armhf"
-	else
-		IS_ARMEL=$(grep -m1 -c armel /proc/$$/maps)
-		if [ $IS_ARMEL -ne 0 ]; then
-			USER_ARCHITECTURE="armel"
+		USER_ARCHITECTURE=${CURRENT_ARCHITECTURE}
+		IS_ARMHF=$(grep -m1 -c armhf /proc/$$/maps)
+		if [ $IS_ARMHF -ne 0 ]; then
+			USER_ARCHITECTURE="armhf"
+		else
+			IS_ARMEL=$(grep -m1 -c armel /proc/$$/maps)
+			if [ $IS_ARMEL -ne 0 ]; then
+				USER_ARCHITECTURE="armel"
+			fi
 		fi
+		if [ "$CURRENT_ARCHITECTURE" != "$USER_ARCHITECTURE" ]; then
+			CURRENT_ARCHITECTURE=$USER_ARCHITECTURE
+		fi
+	else
+		# Change x86_xx to amdxx
+		CURRENT_ARCHITECTURE=${CURRENT_ARCHITECTURE//x86_/amd}
+		# Remove 'l' from armv6l, armv7l
+		CURRENT_ARCHITECTURE=${CURRENT_ARCHITECTURE//l/}
 	fi
-	if [ "$CURRENT_ARCHITECTURE" != "$USER_ARCHITECTURE" ]; then
-		CURRENT_ARCHITECTURE=$USER_ARCHITECTURE
-	fi
-
-	CURRENT_ARCHITECTURE=${CURRENT_ARCHITECTURE//x86_/amd}
 	echo "${CURRENT_ARCHITECTURE}"
 }
 
@@ -107,11 +110,11 @@ function get_package_architecture() {
 	# translate the architecture in the package naming architecture
 	architecture=$(get_architecture)
 	case "$architecture" in
-	armel)
-		architecture='armv6'
+	armv6)
+		architecture='armhf'
 		;;
-	armhf)
-		architecture='armv7'
+	armv7)
+		architecture='armhf'
 		;;
 	esac
 	echo "${architecture}"
@@ -125,7 +128,7 @@ check_architecture() {
 	valid_architectures=''
 	case "$distro" in
 	debian | ubuntu | raspbian | libreelec)
-		valid_architectures='armel, armhf, arm64, amd64'
+		valid_architectures='armv6, armv7, armhf, arm64, amd64'
 		;;
 	fedora)
 		valid_architectures='amd64'
@@ -201,7 +204,7 @@ function install_deb_package() {
 		suites=${_CODEBASE}
 	fi
 
-	architectures="$(get_architecture)"
+	architectures=$(get_package_architecture)
 	DEB822="X-Repolib Name: Hyperion
 Enabled: yes
 Types: deb
