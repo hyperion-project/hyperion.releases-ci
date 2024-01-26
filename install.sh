@@ -110,11 +110,11 @@ function get_package_architecture() {
 	# translate the architecture in the package naming architecture
 	architecture=$(get_architecture)
 	case "$architecture" in
-	armv6)
-		architecture='armhf'
+	armhf)
+		architecture='armv7'
 		;;
-	armv7)
-		architecture='armhf'
+	armel)
+		architecture='armv6'
 		;;
 	esac
 	echo "${architecture}"
@@ -128,7 +128,7 @@ check_architecture() {
 	valid_architectures=''
 	case "$distro" in
 	debian | ubuntu | raspbian | libreelec)
-		valid_architectures='armv6, armv7, armhf, arm64, amd64'
+		valid_architectures='armv6, armv7, armhf, armel, arm64, amd64'
 		;;
 	fedora)
 		valid_architectures='amd64'
@@ -167,18 +167,18 @@ function sudocmd() {
 		# Check if sudo is required for the command
 		sudoRequired=$(sudo -l "$@" 2>/dev/null)
 		if [ $? -eq 0 ]; then
-			echo
-			echo "About to use 'sudo' to run the following command as root:"
-			echo "    $@"
-			echo "in order to $reason."
-			echo
+			debug
+			debug "About to use 'sudo' to run the following command as root:"
+			debug "    $@"
+			debug "in order to $reason."
+			debug
 			sudo "$@"
 		else
-			echo
-			echo "Running the following command:"
-			echo "    $@"
-			echo "in order to $reason."
-			echo
+			debug
+			debug "Running the following command:"
+			debug "    $@"
+			debug "in order to $reason."
+			debug
 			"$@"
 		fi
 	else
@@ -214,7 +214,7 @@ Suites: ${suites}
 Architectures: ${architectures}
 Signed-By: /etc/apt/keyrings/hyperion.pub.gpg"
 
-	if ! sudocmd "add Hyperion Project repository to the system" echo "$DEB822" | sudo tee "/etc/apt/sources.list.d/hyperion.sources"; then
+	if ! sudocmd "add Hyperion Project repository to the system" echo "$DEB822" | sudo tee "/etc/apt/sources.list.d/hyperion.sources" >/dev/null; then
 		error "Failed to add the Hyperion Project Repository. Please run 'apt-get update' and try again."
 	fi
 
@@ -477,32 +477,6 @@ function check_rpi() {
 	return 1
 }
 
-# Stop hyperion service, if it is running
-function stop_hyperion_service() {
-	CURRENT_SERVICE=$(systemctl --type service | grep -o 'hyperion.*\.service' || true)
-
-	if [[ ! -z ${CURRENT_SERVICE} ]]; then
-		info "Stopping current service: ${CURRENT_SERVICE}"
-
-		STOPCMD="systemctl stop --quiet ${CURRENT_SERVICE} --now"
-		USERNAME=${SUDO_USER:-$(whoami)}
-
-		if [ ${USERNAME} != "root" ]; then
-			STOPCMD="sudo ${STOPCMD}"
-		fi
-
-		${STOPCMD} >/dev/null 2>&1
-
-		if [ $? -ne 0 ]; then
-			echo "Failed to stop service: ${CURRENT_SERVICE}, Hyperion may not be started. Stop Hyperion manually."
-			return 1
-		else
-			debug "Service ${CURRENT_SERVICE} successfully stopped."
-		fi
-	fi
-	return 0
-}
-
 # Create hyperion service
 function create_hyperion_service() {
 
@@ -551,14 +525,32 @@ function remove_hyperion_service() {
 	path="$1"
 	shift
 
-	if ! stop_hyperion_service; then
-		exit 1
+	CURRENT_SERVICE=$(systemctl --type service | grep -o 'hyperion.*\.service' || true)
+
+	if [[ ! -z ${CURRENT_SERVICE} ]]; then
+		info "Stopping current service: ${CURRENT_SERVICE}"
+
+		if ! sudocmd "stop the Hyperion systemd service" systemctl --quiet stop ${CURRENT_SERVICE} --now; then
+			echo "Failed to stop service: ${CURRENT_SERVICE}. Stop Hyperion manually."
+		fi
+
+		if ! sudocmd "disable the Hyperion systemd service" systemctl --quiet disable ${CURRENT_SERVICE} --now; then
+			error "Failed to disable service: ${CURRENT_SERVICE}."
+		fi
 	fi
 
 	info "Removing Hyperion systemd service..."
 
 	if ! sudocmd "remove the Hyperion systemd service file" rm -rf ${path}/.config/system.d/hyperion@.service; then
 		error "Failed to remove Hyperion systemd service file."
+	fi
+
+	if ! sudocmd "reload systemd daemon" systemctl --quiet daemon-reload; then
+		error "Failed to reload systemd daemon."
+	fi
+
+	if ! sudocmd "reset systemd daemon" systemctl --quiet reset-failed; then
+		error "Failed to reset systemd daemon."
 	fi
 
 	return 0
@@ -593,13 +585,13 @@ while true; do
 		;;
 	-d | --debian)
 		_DISTRO="debian"
-		_CODEBASE=$1
 		shift
+		_CODEBASE=$1
 		;;
 	-u | --ubuntu)
 		_DISTRO="ubuntu"
-		_CODEBASE=$1
 		shift
+		_CODEBASE=$1
 		;;
 	-r | --remove)
 		_REMOVE=true
