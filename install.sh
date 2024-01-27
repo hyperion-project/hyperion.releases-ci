@@ -431,8 +431,7 @@ apt_get_install_pkgs() {
 function installed_hyperion_version() {
 	path="$1"
 	shift
-	#${path}hyperiond --version | grep -oP 'Version\s+:\s+\K[^\s]+'
-	echo $(${path}hyperiond --version | awk -F'[:()]' '/Version/ {print $2}')
+	echo $(${path}hyperiond --service --version | awk -F'[:()]' '/Version/ {print $2}')
 }
 
 # Check whether Hyperion is installed
