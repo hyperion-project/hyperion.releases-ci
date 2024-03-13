@@ -461,7 +461,7 @@ function check_hyperion_removable() {
 			exit 99
 		fi
 	else
-		error "Hyperion cannot be found and therecheck_curl_installedfore cannot be removed."
+		error "Hyperion cannot be found and therefore cannot be removed."
 	fi
 }
 
@@ -664,5 +664,5 @@ else
 	install_hyperion
 fi
 
-info 'Done'x
+info 'Done'
 exit 0
