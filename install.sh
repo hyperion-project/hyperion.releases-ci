@@ -27,7 +27,7 @@ _BASE_REPO_URI="releases.hyperion-project.org"
 _GITHUB_REPO="hyperion-project/hyperion.ng"
 _GITHUB_API_URI="https://api.github.com/repos/${_GITHUB_REPO}"
 
-_PYTONCMD="python"
+_PYTONCMD=""
 
 # Help print function
 function printHelp {
@@ -279,7 +279,6 @@ function uninstall_dnf_package() {
 
 # Attempts an install of the latest github release
 function install_github_package() {
-
 	targetDirectory="$1"
 	shift
 
@@ -303,20 +302,24 @@ latest_tag = data.get('tag_name', "")
 print(latest_tag)
 """ 2>/dev/null)
 
-	if [ -z "${latestRelease}" ]; then
-		error "Latest GibHub release not found."
-	fi
-	info "Latest GibHub release identified: ${latestRelease}"
+if [ -z "${latestRelease}" ]; then
+	error "Latest GibHub release not found."
+fi
+info "Latest GibHub release identified: ${latestRelease}"
 
-	architecture=$(get_package_architecture)
-	suffix='tar.gz'
-	download_url=$(echo "$releaseResponse" | tr '\r\n' ' ' | ${_PYTONCMD} -c """
+architecture=$(get_package_architecture)
+
+suffix='tar.gz'
+download_url=$(echo "$releaseResponse" | tr '\r\n' ' ' | ${_PYTONCMD} -c """
 import json
 import sys
 import fnmatch
 data = json.load(sys.stdin)
+architecture = '$architecture'
+suffix = '$suffix'
+
 for asset in data['assets']:
-    if fnmatch.fnmatch(asset['name'], f'*${architecture}*.${suffix}'):
+    if fnmatch.fnmatch(asset['name'], '*' + architecture + '*.' + suffix):
         print(asset['browser_download_url'])        
         break
 """ 2>/dev/null)
@@ -372,6 +375,7 @@ function install_hyperion() {
 		case "$_DISTRO" in
 		debian | ubuntu | raspbian)
 			check_hyperion_installed
+			check_curl_installed
 			install_deb_package
 			;;
 		fedora)
@@ -381,6 +385,8 @@ function install_hyperion() {
 		libreelec)
 			basepath="/storage"
 			check_hyperion_installed "${basepath}/hyperion/bin/"
+			check_curl_installed
+			check_python_installed
 			install_github_package "${basepath}"
 			;;
 		*)
@@ -455,7 +461,27 @@ function check_hyperion_removable() {
 			exit 99
 		fi
 	else
-		error "Hyperion cannot be found and therefore cannot be removed."
+		error "Hyperion cannot be found and therecheck_curl_installedfore cannot be removed."
+	fi
+}
+
+# Check whether curl is installed
+function check_curl_installed() {
+	if ! has_cmd "curl"; then
+		error 'curl is required to download a release'
+	fi
+}
+
+# Check whether python is installed
+function check_python_installed() {
+	if has_cmd "python3"; then
+		_PYTONCMD="python3"
+	else
+		if has_cmd "python"; then
+			_PYTONCMD="python"
+		else
+			error 'python3 or python2 is required to download a release'
+		fi
 	fi
 }
 
@@ -638,5 +664,5 @@ else
 	install_hyperion
 fi
 
-info 'Done'
+info 'Done'x
 exit 0
