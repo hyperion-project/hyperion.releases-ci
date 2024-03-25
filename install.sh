@@ -519,6 +519,7 @@ After=network-online.target
 After=systemd-resolved.service
 
 [Service]
+Environment=DISPLAY=:0.0
 ExecStart=${path}/hyperion/bin/hyperiond --userdata ${path}/.hyperion --service
 WorkingDirectory=${path}/hyperion/bin
 User=%i
