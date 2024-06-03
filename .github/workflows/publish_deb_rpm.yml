@@ -36,22 +36,23 @@ jobs:
       - name: 🔑 GPG Import
         if: ${{ env.SECRET_GPG_KEY != null }}
         id: import_gpg
-        uses: crazy-max/ghaction-import-gpg@v5
+        uses: crazy-max/ghaction-import-gpg@v6
         with:
           gpg_private_key: ${{ secrets.GPG_KEY }}
         env:
           SECRET_GPG_KEY: ${{ secrets.GPG_KEY }}
 
       - name: 💾 Artifact download
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
 
       - name: 🔧 Prepare DEB/RPM Upload
         if: ${{ env.SECRET_APT_REPO_NIGHTLY != null && env.SECRET_APT_REPO != null && env.SECRET_DNF_REPO_NIGHTLY != null && env.SECRET_DNF_REPO != null }}
         shell: bash
         run: |
           echo '::group::[APT] Create initial structure and include artifacts into package source'
-            DEB_PACKAGES=$(find artifact/ -name "*.deb" -type f 2>/dev/null | wc -l)
-            if [[ $DEB_PACKAGES -gt 0 ]]; then
+            DEB_PACKAGES=$(find "artifact-*" -name "*.deb" -type f 2>/dev/null)
+            DEB_PACKAGE_NUM=$(echo "$DEB_PACKAGES" | wc -w)
+            if [[ $DEB_PACKAGE_NUM -gt 0 ]]; then
               mkdir -p deb/{conf,dists,db}
               if [[ "${{ inputs.nightly }}" = true ]]; then
                 touch "deb/${{ inputs.head_sha }}"
@@ -59,7 +60,7 @@ jobs:
               cp debian/distributions deb/conf/distributions
               reprepro -Vb deb createsymlinks
               reprepro -Vb deb export
-              for file in artifact/hyperion_*.deb; do
+              for file in $DEB_PACKAGES; do
                 if [ -f "$file" ]; then
                   dist=${file#*~}
                   dist=${dist%_*}
@@ -71,8 +72,9 @@ jobs:
           echo '::endgroup::'
 
           echo '::group::[DNF] Make folders, sign/copy packages and create metadata/manifest files'
-            RPM_PACKAGES=$(find artifact/ -name "*.rpm" -type f 2>/dev/null | wc -l)
-            if [[ $RPM_PACKAGES -gt 0 ]]; then
+            RPM_PACKAGES=$(find "artifact-*" -name "*.rpm" -type f 2>/dev/null)
+            RPM_PACKAGE_NUM=$(echo "$RPM_PACKAGES" | wc -w)
+            if [[ $RPM_PACKAGE_NUM -gt 0 ]]; then
               mkdir rpm/
               if [[ "${{ inputs.nightly }}" = true ]]; then
                 touch "rpm/${{ inputs.head_sha }}"
@@ -81,7 +83,7 @@ jobs:
               rpm --import hyperion.pub.key
               channel=$([ "${{ inputs.nightly }}" = true ] && echo "Nightly" || echo "Stable")
               declare -A distArray=([fc]=fedora [el]=rhel)
-              for file in artifact/hyperion-*.rpm; do
+              for file in $RPM_PACKAGES; do
                 if [ -f "$file" ]; then
                   dist_ver_arch=$(basename -- "$file")
                   dist_ver_arch=${dist_ver_arch%.*}
@@ -103,11 +105,11 @@ jobs:
 
           echo '::group::[APT/DNF] Set server directory'
             if [[ "${{ inputs.nightly }}" = true ]]; then
-              [[ $DEB_PACKAGES -gt 0 ]] && echo "APT_SERVER_DIR=${{ secrets.APT_REPO_NIGHTLY }}" >> $GITHUB_ENV
-              [[ $RPM_PACKAGES -gt 0 ]] && echo "DNF_SERVER_DIR=${{ secrets.DNF_REPO_NIGHTLY }}" >> $GITHUB_ENV
+              [[ $DEB_PACKAGE_NUM -gt 0 ]] && echo "APT_SERVER_DIR=${{ secrets.APT_REPO_NIGHTLY }}" >> $GITHUB_ENV
+              [[ $RPM_PACKAGE_NUM -gt 0 ]] && echo "DNF_SERVER_DIR=${{ secrets.DNF_REPO_NIGHTLY }}" >> $GITHUB_ENV
             else
-              [[ $DEB_PACKAGES -gt 0 ]] && echo "APT_SERVER_DIR=${{ secrets.APT_REPO }}" >> $GITHUB_ENV
-              [[ $RPM_PACKAGES -gt 0 ]] && echo "DNF_SERVER_DIR=${{ secrets.DNF_REPO }}" >> $GITHUB_ENV
+              [[ $DEB_PACKAGE_NUM -gt 0 ]] && echo "APT_SERVER_DIR=${{ secrets.APT_REPO }}" >> $GITHUB_ENV
+              [[ $RPM_PACKAGE_NUM -gt 0 ]] && echo "DNF_SERVER_DIR=${{ secrets.DNF_REPO }}" >> $GITHUB_ENV
             fi
           echo '::endgroup::'
         env:
@@ -118,7 +120,7 @@ jobs:
 
       - name: 📦 DEB Upload
         if: ${{ env.SECRET_REPO_USER != null && env.SECRET_REPO_PASSWORD != null && env.APT_SERVER_DIR != null && inputs.publish }}
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.4
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
           server: releases.hyperion-project.org
           username: ${{ secrets.REPO_USER }}
@@ -132,7 +134,7 @@ jobs:
 
       - name: 📦 RPM Upload
         if: ${{ env.SECRET_REPO_USER != null && env.SECRET_REPO_PASSWORD != null && env.DNF_SERVER_DIR != null && inputs.publish }}
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.4
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
           server: releases.hyperion-project.org
           username: ${{ secrets.REPO_USER }}
@@ -145,7 +147,7 @@ jobs:
           SECRET_REPO_PASSWORD: ${{ secrets.REPO_PASSWORD }}
 
       - name: 🧹 Cleanup
-        uses: geekyeggo/delete-artifact@v2
+        uses: geekyeggo/delete-artifact@v5
         with:
-          name: artifact
+          name: artifact-*
           failOnError: false
