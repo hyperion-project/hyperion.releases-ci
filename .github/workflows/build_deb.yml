@@ -123,7 +123,7 @@ jobs:
 
       - name: 📦 Upload
         if: ${{ inputs.upload }}
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           path: deploy
           retention-days: 1
