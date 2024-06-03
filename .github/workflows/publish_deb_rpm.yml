@@ -145,7 +145,7 @@ jobs:
           SECRET_REPO_PASSWORD: ${{ secrets.REPO_PASSWORD }}
 
       - name: 🧹 Cleanup
-        uses: geekyeggo/delete-artifact@v2
+        uses: geekyeggo/delete-artifact@v5
         with:
           name: artifact
           failOnError: false
