@@ -36,8 +36,6 @@ jobs:
       fail-fast: false
       matrix:
         os: [
-          { distribution: Fedora, version: 37 },
-          { distribution: Fedora, version: 38 },
           { distribution: Fedora, version: 39 },
           { distribution: Fedora, version: 40 }
         ]
