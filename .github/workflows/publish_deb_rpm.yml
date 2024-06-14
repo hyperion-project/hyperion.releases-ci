@@ -33,24 +33,14 @@ jobs:
       - name: ⬇ Checkout
         uses: actions/checkout@v4
 
-      - name: 🔑 GPG Import
-        if: ${{ env.SECRET_GPG_KEY != null }}
-        id: import_gpg
-        uses: crazy-max/ghaction-import-gpg@v6
-        with:
-          gpg_private_key: ${{ secrets.GPG_KEY }}
-        env:
-          SECRET_GPG_KEY: ${{ secrets.GPG_KEY }}
-
       - name: 💾 Artifact download
         uses: actions/download-artifact@v4
 
       - name: 🔧 Prepare DEB/RPM Upload
-        if: ${{ env.SECRET_APT_REPO_NIGHTLY != null && env.SECRET_APT_REPO != null && env.SECRET_DNF_REPO_NIGHTLY != null && env.SECRET_DNF_REPO != null }}
         shell: bash
         run: |
           echo '::group::[APT] Create initial structure and include artifacts into package source'
-            DEB_PACKAGES=$(find "artifact-*" -name "*.deb" -type f 2>/dev/null)
+            DEB_PACKAGES=$(find "." -name "artifact-*.deb" -type f 2>/dev/null)
             DEB_PACKAGE_NUM=$(echo "$DEB_PACKAGES" | wc -w)
             if [[ $DEB_PACKAGE_NUM -gt 0 ]]; then
               mkdir -p deb/{conf,dists,db}
@@ -70,81 +60,6 @@ jobs:
               cp .github/workflows/redirect.html deb/index.html
             fi
           echo '::endgroup::'
-
-          echo '::group::[DNF] Make folders, sign/copy packages and create metadata/manifest files'
-            RPM_PACKAGES=$(find "artifact-*" -name "*.rpm" -type f 2>/dev/null)
-            RPM_PACKAGE_NUM=$(echo "$RPM_PACKAGES" | wc -w)
-            if [[ $RPM_PACKAGE_NUM -gt 0 ]]; then
-              mkdir rpm/
-              if [[ "${{ inputs.nightly }}" = true ]]; then
-                touch "rpm/${{ inputs.head_sha }}"
-              fi
-              gpg --armor --output hyperion.pub.key --export 'admin@hyperion-project.org'
-              rpm --import hyperion.pub.key
-              channel=$([ "${{ inputs.nightly }}" = true ] && echo "Nightly" || echo "Stable")
-              declare -A distArray=([fc]=fedora [el]=rhel)
-              for file in $RPM_PACKAGES; do
-                if [ -f "$file" ]; then
-                  dist_ver_arch=$(basename -- "$file")
-                  dist_ver_arch=${dist_ver_arch%.*}
-                  dist_ver=${dist_ver_arch%.*}
-                  dist_ver=${dist_ver##*.}
-                  [ -z "${dist_ver:0:2}" ] && continue
-                  rpm=rpm/${distArray[${dist_ver:0:2}]}/${dist_ver:2}/${dist_ver_arch##*.}
-                  mkdir -p $rpm/ && cp $file $rpm/
-                  rpm --define "_gpg_name ${{ steps.import_gpg.outputs.keyid }}" --addsign $rpm/*.rpm
-                  rpm --checksig $rpm/*.rpm
-                  createrepo $rpm/
-                  gpg --yes --detach-sign --armor $rpm/repodata/repomd.xml
-                  sed -r "s/@CHANNEL@/${channel}/g; s/@DIST@/${distArray[${dist_ver:0:2}]}/g; s/@ARCH@/${dist_ver_arch##*.}/g" ${GITHUB_WORKSPACE}/rpmbuild/hyperion.repo.in > rpm/${distArray[${dist_ver:0:2}]}/hyperion.repo
-                fi
-              done
-              cp .github/workflows/redirect.html rpm/index.html
-            fi
-          echo '::endgroup::'
-
-          echo '::group::[APT/DNF] Set server directory'
-            if [[ "${{ inputs.nightly }}" = true ]]; then
-              [[ $DEB_PACKAGE_NUM -gt 0 ]] && echo "APT_SERVER_DIR=${{ secrets.APT_REPO_NIGHTLY }}" >> $GITHUB_ENV
-              [[ $RPM_PACKAGE_NUM -gt 0 ]] && echo "DNF_SERVER_DIR=${{ secrets.DNF_REPO_NIGHTLY }}" >> $GITHUB_ENV
-            else
-              [[ $DEB_PACKAGE_NUM -gt 0 ]] && echo "APT_SERVER_DIR=${{ secrets.APT_REPO }}" >> $GITHUB_ENV
-              [[ $RPM_PACKAGE_NUM -gt 0 ]] && echo "DNF_SERVER_DIR=${{ secrets.DNF_REPO }}" >> $GITHUB_ENV
-            fi
-          echo '::endgroup::'
-        env:
-          SECRET_APT_REPO_NIGHTLY: ${{ secrets.APT_REPO_NIGHTLY }}
-          SECRET_APT_REPO: ${{ secrets.APT_REPO }}
-          SECRET_DNF_REPO_NIGHTLY: ${{ secrets.DNF_REPO_NIGHTLY }}
-          SECRET_DNF_REPO: ${{ secrets.DNF_REPO }}
-
-      - name: 📦 DEB Upload
-        if: ${{ env.SECRET_REPO_USER != null && env.SECRET_REPO_PASSWORD != null && env.APT_SERVER_DIR != null && inputs.publish }}
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
-        with:
-          server: releases.hyperion-project.org
-          username: ${{ secrets.REPO_USER }}
-          password: ${{ secrets.REPO_PASSWORD }}
-          server-dir: ${{ env.APT_SERVER_DIR }}
-          local-dir: ./deb/
-          dangerous-clean-slate: true
-        env:
-          SECRET_REPO_USER: ${{ secrets.REPO_USER }}
-          SECRET_REPO_PASSWORD: ${{ secrets.REPO_PASSWORD }}
-
-      - name: 📦 RPM Upload
-        if: ${{ env.SECRET_REPO_USER != null && env.SECRET_REPO_PASSWORD != null && env.DNF_SERVER_DIR != null && inputs.publish }}
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
-        with:
-          server: releases.hyperion-project.org
-          username: ${{ secrets.REPO_USER }}
-          password: ${{ secrets.REPO_PASSWORD }}
-          server-dir: ${{ env.DNF_SERVER_DIR }}
-          local-dir: ./rpm/
-          dangerous-clean-slate: true
-        env:
-          SECRET_REPO_USER: ${{ secrets.REPO_USER }}
-          SECRET_REPO_PASSWORD: ${{ secrets.REPO_PASSWORD }}
 
       - name: 🧹 Cleanup
         uses: geekyeggo/delete-artifact@v5
