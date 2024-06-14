@@ -50,7 +50,7 @@ jobs:
         shell: bash
         run: |
           echo '::group::[APT] Create initial structure and include artifacts into package source'
-            DEB_PACKAGES=$(find "artifact-*" -name "*.deb" -type f 2>/dev/null)
+            DEB_PACKAGES=$(find . -path "./artifact-*" -type f -name "*.deb" 2>/dev/null)
             DEB_PACKAGE_NUM=$(echo "$DEB_PACKAGES" | wc -w)
             if [[ $DEB_PACKAGE_NUM -gt 0 ]]; then
               mkdir -p deb/{conf,dists,db}
@@ -72,7 +72,7 @@ jobs:
           echo '::endgroup::'
 
           echo '::group::[DNF] Make folders, sign/copy packages and create metadata/manifest files'
-            RPM_PACKAGES=$(find "artifact-*" -name "*.rpm" -type f 2>/dev/null)
+            RPM_PACKAGES=$(find . -path "./artifact-*" -type f -name "*.rpm" 2>/dev/null)
             RPM_PACKAGE_NUM=$(echo "$RPM_PACKAGES" | wc -w)
             if [[ $RPM_PACKAGE_NUM -gt 0 ]]; then
               mkdir rpm/
