@@ -269,5 +269,7 @@ echo "--------------------------------------------------------------------------
 %{_datadir}/%{name}/
 %exclude %{_datadir}/%{name}/service/%{name}.init
 %exclude %{_datadir}/%{name}/service/%{name}.initctl
+%exclude %{_includedir}/
+%exclude %{_libdir}/
 
 %changelog
