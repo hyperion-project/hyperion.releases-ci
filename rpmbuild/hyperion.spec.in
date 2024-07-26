@@ -270,6 +270,6 @@ echo "--------------------------------------------------------------------------
 %exclude %{_datadir}/%{name}/service/%{name}.init
 %exclude %{_datadir}/%{name}/service/%{name}.initctl
 %exclude %{_includedir}/
-%exclude %{_libdir}/
+%exclude /usr/lib/
 
 %changelog
