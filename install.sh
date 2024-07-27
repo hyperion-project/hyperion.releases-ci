@@ -106,8 +106,8 @@ function get_architecture() {
 	echo "${CURRENT_ARCHITECTURE}"
 }
 
-function get_package_architecture() {
-	# translate the architecture in the package naming architecture
+function get_github_artifacts_architecture() {
+	# translate the architecture in the one used for artifacts build via GitHub
 	architecture=$(get_architecture)
 	case "$architecture" in
 	armhf)
@@ -204,7 +204,6 @@ function install_deb_package() {
 		suites=${_CODEBASE}
 	fi
 
-	architectures=$(get_package_architecture)
 	DEB822="X-Repolib Name: Hyperion
 Enabled: yes
 Types: deb
@@ -306,7 +305,7 @@ if [ -z "${latestRelease}" ]; then
 fi
 info "Latest GibHub release identified: ${latestRelease}"
 
-architecture=$(get_package_architecture)
+architecture=$(get_github_artifacts_architecture)
 
 suffix='tar.gz'
 download_url=$(echo "$releaseResponse" | tr '\r\n' ' ' | ${_PYTONCMD} -c """
