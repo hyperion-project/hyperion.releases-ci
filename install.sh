@@ -211,7 +211,6 @@ Types: deb
 URIs: https://${_NIGHTLY}apt.${_BASE_REPO_URI}
 Components: main
 Suites: ${suites}
-Architectures: ${architectures}
 Signed-By: /etc/apt/keyrings/hyperion.pub.gpg"
 
 	if ! sudocmd "add Hyperion Project repository to the system" echo "$DEB822" | sudo tee "/etc/apt/sources.list.d/hyperion.sources" >/dev/null; then
