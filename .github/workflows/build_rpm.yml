@@ -60,10 +60,9 @@ jobs:
         run: |
           echo '::group::Checking the version number'
             if [[ "${{ inputs.nightly }}" = true ]]; then
-              echo "$(tr -d '\n' < .version | sed s/-/~/g)^nightly$(date '+%Y%m%d')${{ inputs.head_sha }}" > .version
-              echo VERSION=$(cat .version) >> $GITHUB_ENV
+              echo "$(tr -d '\n' < .version)+nightly$(date '+%Y%m%d')${{ inputs.head_sha }}" > .version
             else
-              echo VERSION=$(tr -d '\n' < .version | sed s/-/~/g) >> $GITHUB_ENV
+              tr -d '\n' < .version > temp && mv temp .version
             fi
           echo '::endgroup::'
 
@@ -75,6 +74,7 @@ jobs:
         shell: bash
         run: |
           echo '::group::Building Hyperion'
+            VERSION=$(cat .version)
             mkdir -p "${GITHUB_WORKSPACE}/deploy"
             docker run --rm --platform=${{ matrix.architecture[1] }} \
               -w "/root" \
@@ -84,7 +84,7 @@ jobs:
               /bin/bash -c "tar -czf rpmbuild/SOURCES/hyperion.ng.tar.gz hyperion.ng/ && \
               cp -f hyperion.ng/rpmbuild/hyperion.spec.in rpmbuild/SPECS/hyperion.spec && \
               rpmdev-bumpspec --comment='${{ env.COMMIT_MESSAGE }}' --userstring='${{ env.ACTOR }}' rpmbuild/SPECS/hyperion.spec && \
-              rpmbuild -ba --define '_version ${{ env.VERSION }}' rpmbuild/SPECS/hyperion.spec --clean && \
+              rpmbuild -ba --define '_version $(echo ${VERSION} | sed s/-/~/g | sed s/+/^/g)' rpmbuild/SPECS/hyperion.spec --clean && \
               cp -fv rpmbuild/RPMS/$(uname -m)/hyperion* /deploy"
           echo '::endgroup::'
         env:
