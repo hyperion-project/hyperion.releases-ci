@@ -82,6 +82,7 @@ jobs:
               gpg --armor --output hyperion.pub.key --export 'admin@hyperion-project.org'
               rpm --import hyperion.pub.key
               channel=$([ "${{ inputs.nightly }}" = true ] && echo "Nightly" || echo "Stable")
+              nightly=$([ "${{ inputs.nightly }}" = true ] && echo "nightly." || echo "")
               declare -A distArray=([fc]=fedora [el]=rhel)
               for file in $RPM_PACKAGES; do
                 if [ -f "$file" ]; then
@@ -96,7 +97,7 @@ jobs:
                   rpm --checksig $rpm/*.rpm
                   createrepo $rpm/
                   gpg --yes --detach-sign --armor $rpm/repodata/repomd.xml
-                  sed -r "s/@CHANNEL@/${channel}/g; s/@DIST@/${distArray[${dist_ver:0:2}]}/g; s/@ARCH@/${dist_ver_arch##*.}/g" ${GITHUB_WORKSPACE}/rpmbuild/hyperion.repo.in > rpm/${distArray[${dist_ver:0:2}]}/hyperion.repo
+                  sed -r "s/@CHANNEL@/${channel}/g; s/@DIST@/${distArray[${dist_ver:0:2}]}/g; s/@ARCH@/${dist_ver_arch##*.}/g; s/@NIGHTLY@/${nightly}/g" ${GITHUB_WORKSPACE}/rpmbuild/hyperion.repo.in > rpm/${distArray[${dist_ver:0:2}]}/hyperion.repo
                 fi
               done
               cp .github/workflows/redirect.html rpm/index.html
