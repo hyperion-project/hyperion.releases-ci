@@ -8,55 +8,12 @@ on:
 
 jobs:
 
-###############################################
-###### rpi_ws281x submodule update check ######
-###############################################
-
-  update_submodule:
-    name: 🔁 Update Submodule rpi_ws281x
-    runs-on: ubuntu-latest
-    steps:
-      - name: ⬇ Checkout
-        uses: actions/checkout@v4
-        with:
-          repository: hyperion-project/hyperion.ng
-          persist-credentials: false
-          fetch-depth: 0
-          submodules: recursive
-
-      - name: 🔁 Update Submodule rpi_ws281x
-        id: update
-        run: git submodule update --remote --recursive dependencies/external/rpi_ws281x
-
-      - name: ✅ Check git status
-        id: status
-        run: echo "status=$(git status -s)" >> $GITHUB_OUTPUT
-
-      - name: ✏️ Add/Commit changes
-        if: ${{ steps.status.outputs.status }}
-        run: |
-          git config --local user.email "20935312+Hyperion-Bot@users.noreply.github.com"
-          git config --local user.name "Hyperion-Bot"
-          git config --local diff.ignoreSubmodules dirty
-          git commit -am "Update submodule rpi_ws281x"
-
-      - name: 📦 Push changes
-        if: ${{ env.SECRET_BOT_TOKEN != null && steps.status.outputs.status }}
-        uses: ad-m/github-push-action@master
-        with:
-          github_token: ${{ secrets.HYPERION_BOT_TOKEN }}
-          repository: hyperion-project/hyperion.ng
-          branch: master
-        env:
-          SECRET_BOT_TOKEN: ${{ secrets.HYPERION_BOT_TOKEN }}
-
 ##################################
 ###### APT/DNF commit check ######
 ##################################
 
   check:
     name: 🔀 Compare Repository with current master
-    needs: [update_submodule]
     runs-on: ubuntu-latest
     outputs:
       build-apt-nightly: ${{ steps.apt-build-necessary.outputs.commit-has-changed }}
