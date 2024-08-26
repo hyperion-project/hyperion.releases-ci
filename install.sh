@@ -152,8 +152,13 @@ check_architecture() {
 
 function get_distro() {
 	# Determine the used Linux distribution.
-	distro=$(lsb_release -si 2>/dev/null | awk '{print $1}' || cat /etc/os-release | grep -oP '^ID=["\"]?\K\w+' || echo "unknown")
-	echo ${distro} | tr '[:upper:]' '[:lower:]'
+	if command -v lsb_release >/dev/null 2>&1; then
+	    distro=$(lsb_release -si | awk '{print $1}')
+	else
+	    distro=$(cat /etc/os-release | grep -oP '^ID=["\"]?\K\w+')
+	fi
+
+	echo "${distro}" | tr '[:upper:]' '[:lower:]'
 }
 
 # Adds a 'sudo' prefix if sudo is available to execute the given command
