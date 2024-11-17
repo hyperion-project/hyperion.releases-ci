@@ -37,7 +37,8 @@ jobs:
       matrix:
         os: [
           { distribution: Fedora, version: 39 },
-          { distribution: Fedora, version: 40 }
+          { distribution: Fedora, version: 40 },
+          { distribution: Fedora, version: 41 }
         ]
         architecture: [
           [ amd64, linux/amd64 ]
