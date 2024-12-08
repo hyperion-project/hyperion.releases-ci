@@ -283,6 +283,7 @@ function uninstall_dnf_package() {
 # Attempts an install of the latest github release
 function install_github_package() {
 	targetDirectory="$1"
+	homeDirectory="$2"
 	shift
 
 	if [ -n "${_NIGHTLY}" ]; then
@@ -338,7 +339,7 @@ for asset in data['assets']:
 	# Set the execute bit on files if curl was successful
 	chmod +x -R ${targetDirectory}/hyperion/bin
 
-	create_hyperion_service ${targetDirectory}
+	create_hyperion_service ${targetDirectory} ${homeDirectory}
 
 	if check_rpi; then
 		info "Configure Raspberry Pi specifics."
@@ -387,13 +388,14 @@ function install_hyperion() {
 			;;
 		libreelec)
 			basepath="/storage"
+			homeDirectory="${basepath}"
 			check_hyperion_installed "${basepath}/hyperion/bin/"
 			check_curl_installed
 			check_python_installed
-			install_github_package "${basepath}"
+			install_github_package "${basepath}" "${homeDirectory}"
 			;;
 		*)
-			error "Sorry, this installer doesn't support your Linux distribution."
+			error "Sorry, this installer does not support your Linux distribution."
 			;;
 		esac
 	fi
@@ -416,7 +418,7 @@ function uninstall_hyperion() {
 		uninstall_github_package "${basepath}"
 		;;
 	*)
-		error "Sorry, this installer doesn't support your Linux distribution."
+		error "Sorry, this installer does not support your Linux distribution."
 		;;
 	esac
 }
@@ -509,9 +511,19 @@ function check_rpi() {
 function create_hyperion_service() {
 
 	path="$1"
+	homeDirectory="$2"
 	shift
 
+	if [ -z ${homeDirectory} ]; then
+		envHome=""
+		homeDirectory=${path}
+	else
+		envHome="Environment=HOME=${homeDirectory}"
+	fi
+
 	debug "Create hyperion systemd service."
+	debug "App  directory: ${path}"
+	debug "HOME directory: ${homeDirectory}"
 
 	service_unit="[Unit]
 Description=Hyperion ambient light systemd service for user %i
@@ -522,8 +534,9 @@ After=network-online.target
 After=systemd-resolved.service
 
 [Service]
+${envHome}
 Environment=DISPLAY=:0.0
-ExecStart=${path}/hyperion/bin/hyperiond --userdata ${path}/.hyperion --service
+ExecStart=${path}/hyperion/bin/hyperiond --userdata ${homeDirectory}/.hyperion --service
 WorkingDirectory=${path}/hyperion/bin
 User=%i
 TimeoutStopSec=5
