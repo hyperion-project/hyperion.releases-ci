@@ -25,7 +25,7 @@ BuildRequires:  cmake
 BuildRequires:  ninja-build
 BuildRequires:  desktop-file-utils
 BuildRequires:  libappstream-glib
-BuildRequires:  qt6-qtbase-devel qt6-qtserialport-devel
+BuildRequires:  qt6-qtbase-devel qt6-qtserialport-devel qt6-qtwebsockets-devel
 BuildRequires:  libxkbcommon-devel
 BuildRequires:  python3-devel
 BuildRequires:  turbojpeg-devel libjpeg-turbo-devel
@@ -48,7 +48,7 @@ BuildRequires: systemd-rpm-macros
 %endif
 
 Requires:       desktop-file-utils
-Requires:       qt6-qtbase qt6-qtserialport
+Requires:       qt6-qtbase qt6-qtserialport qt6-qtwebsockets
 Requires:       libxkbcommon
 Requires:       python3-libs
 Requires:       turbojpeg

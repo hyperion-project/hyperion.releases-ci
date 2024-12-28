@@ -11,9 +11,9 @@ REQUIRED_DEPS := libusb libasound libmbedtls libturbojpeg libcec
 # get qt version and set qt deps depending on version
 QT6_PACKAGE_VERSION := $(shell dpkg-query -W -f '$${Version}' libqt6widgets6* 2>/dev/null || echo 0)
 ifeq (ok,$(shell dpkg --compare-versions "$(QT6_PACKAGE_VERSION)" "ge" "6.0" && echo ok))
-	QT_DEPS := qt6-qpa-plugins libqt6network6 libqt6widgets6 libqt6sql6 libqt6serialport6 libqt6sql6-sqlite
+	QT_DEPS := qt6-qpa-plugins libqt6network6 libqt6widgets6 libqt6sql6 libqt6serialport6 libqt6sql6-sqlite libqt6websockets6
 else
-	QT_DEPS := libqt5network5 libqt5widgets5 libqt5x11extras5 libqt5sql5 libqt5serialport5 libqt5sql5-sqlite
+	QT_DEPS := libqt5network5 libqt5widgets5 libqt5x11extras5 libqt5sql5 libqt5serialport5 libqt5sql5-sqlite libqt5websockets5
 endif
 
 FIND_DEPENDS = $(shell \
