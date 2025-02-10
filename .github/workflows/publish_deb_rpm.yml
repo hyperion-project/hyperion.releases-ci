@@ -22,7 +22,7 @@ on:
 jobs:
   publish:
     name: ${{ inputs.publish && '🚀 Publish repository' || '📦 Assemble repository' }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     container:
       image: fedora
     steps:

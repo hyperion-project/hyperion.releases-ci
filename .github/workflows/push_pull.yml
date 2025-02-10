@@ -6,7 +6,7 @@ run-name: |
 on:
   push:
     branches:
-      - 'main'
+      - 'refactor' # reset to main
   pull_request:
     branches:
       - 'main'

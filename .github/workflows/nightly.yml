@@ -20,7 +20,7 @@ jobs:
 
   check:
     name: 🔀 Compare Repository with current master
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     outputs:
       build-apt-nightly: ${{ steps.apt-build-necessary.outputs.commit-has-changed }}
       build-dnf-nightly: ${{ steps.dnf-build-necessary.outputs.commit-has-changed }}
