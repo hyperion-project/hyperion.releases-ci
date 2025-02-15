@@ -1,7 +1,8 @@
 #!/usr/bin/make -f
 
-SHELL := /bin/bash
+#export DH_VERBOSE=1
 
+SHELL := /bin/bash
 BUILDDIR := build
 TARGET := debian/tmp
 
@@ -40,28 +41,56 @@ FIND_DEPENDS = $(shell \
 CMAKE_ENVIRONMENT := -DUSE_SYSTEM_MBEDTLS_LIBS=ON -DENABLE_DEPLOY_DEPENDENCIES=OFF -DCMAKE_BUILD_TYPE=Release
 
 ifeq ($(shell dpkg-vendor --query Vendor),Ubuntu)
-	ifeq ($(shell dpkg-architecture -qDEB_HOST_ARCH),arm64)
-		CMAKE_ENVIRONMENT+= -DENABLE_DISPMANX=OFF -DENABLE_X11=ON -DENABLE_XCB=ON
-	else ifeq ($(shell dpkg-architecture -qDEB_HOST_ARCH),armhf)
+	ifneq ($(filter arm64 armhf,$(shell dpkg-architecture -qDEB_HOST_ARCH)),)
 		CMAKE_ENVIRONMENT+= -DENABLE_DISPMANX=OFF -DENABLE_X11=ON -DENABLE_XCB=ON
 	endif
 endif
 
-build:
-	[ -d $(BUILDDIR) ] || mkdir -p $(BUILDDIR)
-	cd $(BUILDDIR); cmake -G Ninja $(CMAKE_ENVIRONMENT) -DCMAKE_INSTALL_PREFIX=../$(TARGET)/usr .. && ninja
+%:
+	dh $@ --builddirectory=$(BUILDDIR) --destdir=$(TARGET) --buildsystem=cmake+ninja
 
-binary:
+override_dh_auto_configure:
+	dh_auto_configure -- $(CMAKE_ENVIRONMENT)
+
+override_dh_auto_build:
+	ninja -C $(BUILDDIR)
+
+override_dh_gencontrol:
 	$(eval DETERMINED_DEPS=$(FIND_DEPENDS))
-	cd $(BUILDDIR); cmake -P cmake_install.cmake
-	rm -rf $(TARGET)/usr/include $(TARGET)/usr/lib $(TARGET)/usr/bin/flatc
-	[ -d $(TARGET)/DEBIAN ] || mkdir -p $(TARGET)/DEBIAN
-	cp -rf cmake/package-scripts/* $(TARGET)/DEBIAN/
-	chmod 0775 $(TARGET)/DEBIAN/*
 	dpkg-gencontrol -phyperion "-Vdist:Depends=$(DETERMINED_DEPS)"
+
+override_dh_builddeb:
 	dpkg-deb --build $(TARGET) ..
 
-clean:
-	rm -rf $(TARGET) $(BUILDDIR)
+override_dh_auto_install:
+	dh_auto_install
+	rm -rf $(TARGET)/usr/include $(TARGET)/usr/lib $(TARGET)/usr/bin/flatc* $(TARGET)/usr/bin/protoc*
 
-.PHONY: build binary clean
+override_dh_install:
+	mkdir -p $(TARGET)/DEBIAN
+	cp -rf cmake/package-scripts/* $(TARGET)/DEBIAN/
+
+override_dh_fixperms:
+	chmod -R 0775 $(TARGET)/DEBIAN
+	chmod -R 0644 $(TARGET)/usr/share/hyperion
+	find $(TARGET)/usr -type d -exec chmod 0755 {} \;
+
+override_dh_strip:
+	strip --verbose --strip-unneeded --remove-section=.comment --remove-section=.note $(TARGET)/usr/share/hyperion/bin/hyperion*
+
+# skipped targets
+override_dh_auto_test:
+override_dh_installdocs:
+override_dh_installchangelogs:
+override_dh_systemd_enable:
+override_dh_installinit:
+override_dh_systemd_start:
+override_dh_perl:
+override_dh_link:
+override_dh_strip_nondeterminism:
+override_dh_compress:
+override_dh_missing:
+override_dh_makeshlibs:
+override_dh_shlibdeps:
+override_dh_installdeb:
+override_dh_md5sums:

@@ -17,20 +17,10 @@ on:
         required: false
 
 jobs:
-  # Build DEB Packages for APT Repository
-  deb_build:
-    name: 👷 Build DEB Packages
-    uses: ./.github/workflows/build_deb.yml
-    secrets: inherit
-    with:
-      repo_checkout: ${{ inputs.repo_checkout }}
-      head_sha: ${{ github.event.client_payload.head_sha || inputs.head_sha }}
-      upload: true
-
-  # Build RPM Packages for DNF Repository
-  rpm_build:
-    name: 👷 Build RPM Packages
-    uses: ./.github/workflows/build_rpm.yml
+  # Build DEB/RPM Packages for APT/DNF Repository
+  build_packages:
+    name: 👷 Build DEB/RPM Packages
+    uses: ./.github/workflows/build_deb_rpm.yml
     secrets: inherit
     with:
       repo_checkout: ${{ inputs.repo_checkout }}
@@ -40,7 +30,7 @@ jobs:
   # Publish RPM Packages to DNF Repository
   publish_packages:
     name: 🚀 Publish Packages
-    needs: [ deb_build, rpm_build ]
+    needs: build_packages
     uses: ./.github/workflows/publish_deb_rpm.yml
     secrets: inherit
     with:

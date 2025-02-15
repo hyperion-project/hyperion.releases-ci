@@ -1,7 +1,7 @@
 name: Push/Pull Request
 run-name: |
   ${{ github.event_name == 'push' && '🌱 Push builds -' || '' }}
-  ${{ github.event_name == 'pull_request' && format('👷 PR {0} builds - {1}', github.event.pull_request.number, github.event.pull_request.title) || github.event.head_commit.message }}
+  ${{ github.event_name == 'pull_request' && format('👷 PR #{0} build - {1}', github.event.pull_request.number, github.event.pull_request.title) || github.event.head_commit.message }}
 
 on:
   push:
@@ -12,22 +12,15 @@ on:
       - 'main'
 
 jobs:
-  deb_build:
-    name: 👷 Build DEB Packages
-    uses: ./.github/workflows/build_deb.yml
-    secrets: inherit
-    with:
-      upload: true
-
-  rpm_build:
-    name: 👷 Build RPM Packages
-    uses: ./.github/workflows/build_rpm.yml
+  build_packages:
+    name: 👷 Build DEB/RPM Packages
+    uses: ./.github/workflows/build_deb_rpm.yml
     secrets: inherit
     with:
       upload: true
 
   publish_test:
     name: 🚀 Create Repository Structure (Test)
-    needs: [ deb_build, rpm_build ]
+    needs: build_packages
     uses: ./.github/workflows/publish_deb_rpm.yml
     secrets: inherit
