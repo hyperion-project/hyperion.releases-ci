@@ -1,12 +1,12 @@
 name: Push/Pull Request
 run-name: |
   ${{ github.event_name == 'push' && '🌱 Push builds -' || '' }}
-  ${{ github.event_name == 'pull_request' && format('👷 PR {0} builds - {1}', github.event.pull_request.number, github.event.pull_request.title) || github.event.head_commit.message }}
+  ${{ github.event_name == 'pull_request' && format('👷 PR #{0} build - {1}', github.event.pull_request.number, github.event.pull_request.title) || github.event.head_commit.message }}
 
 on:
   push:
     branches:
-      - 'refactor' # reset to main
+      - 'main'
   pull_request:
     branches:
       - 'main'
