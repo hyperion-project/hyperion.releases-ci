@@ -48,35 +48,23 @@ jobs:
               echo "commit-has-changed=true" >> $GITHUB_OUTPUT
           fi
 
-  # Build DEB Packages for APT Repository
-  deb_build:
-    name: 👷 Build DEB Packages
-    if: ${{ needs.check.outputs.build-apt-nightly == 'true' || inputs.forceRun }}
+  # Build DEB/RPM Packages for APT Repository
+  build_packages:
+    name: 👷 Build DEB/RPM Packages
+    if: ${{ needs.check.outputs.build-apt-nightly == 'true' || needs.check.outputs.build-dnf-nightly == 'true' || inputs.forceRun }}
     needs: [check]
-    uses: ./.github/workflows/build_deb.yml
+    uses: ./.github/workflows/build_deb_rpm.yml
     secrets: inherit
     with:
       head_sha: ${{ needs.check.outputs.current-head-sha }}
       nightly: true
       upload: true
 
-  # Build RPM Packages for DNF Repository
-  rpm_build:
-    name: 👷 Build RPM Packages
-    if: ${{ needs.check.outputs.build-dnf-nightly == 'true' || inputs.forceRun }}
-    needs: [check]
-    uses: ./.github/workflows/build_rpm.yml
-    secrets: inherit
-    with:
-      head_sha: ${{ needs.check.outputs.current-head-sha }}
-      nightly: true
-      upload: true
-
-  # Publish RPM Packages to DNF Repository
+  # Publish DEB/RPM Packages to DNF Repository
   publish_packages:
     name: 🚀 Publish Packages
     if: ${{ needs.check.outputs.build-apt-nightly == 'true' || needs.check.outputs.build-dnf-nightly == 'true' || inputs.forceRun }}
-    needs: [ check, deb_build, rpm_build ]
+    needs: [ check, build_packages ]
     uses: ./.github/workflows/publish_deb_rpm.yml
     secrets: inherit
     with:

@@ -5,12 +5,12 @@ on:
     inputs:
       repo_checkout:
         type: string
-        description: The GitHub Repository to checkout
-        default: hyperion-project
+        description: The GitHub Repository to checkout (lower case)
+        default: hyperion-project/hyperion.ng
         required: false
       head_sha:
         type: string
-        description: The branch, tag or SHA to checkout
+        description: The branch, tag or SHA to checkout (case sensitive)
         default: master
         required: false
       nightly:
@@ -24,14 +24,10 @@ on:
         default: false
         required: false
 
-env:
-  repository: ${{ inputs.repo_checkout }}
-  ghcr: hyperion-project
-
 jobs:
   build:
     name: 🐧 ${{ matrix.os.description }} (${{ matrix.architecture[0] }})
-    runs-on: ubuntu-22.04
+    runs-on: ${{ matrix.architecture[0] == 'amd64' && 'ubuntu-22.04' || 'ubuntu-22.04-arm' }}
     strategy:
       fail-fast: false
       matrix:
@@ -43,7 +39,10 @@ jobs:
           { distribution: debian, codename: buster,   description: Debian 10.x  (Buster),          qt_version: '5' }, # Qt 6 not available
           { distribution: debian, codename: bullseye, description: Debian 11.x  (Bullseye),        qt_version: '5' }, # Qt 6 only available from bullseye-backports
           { distribution: debian, codename: bookworm, description: Debian 12.x  (Bookworm),        qt_version: '6' },
-          { distribution: debian, codename: trixie,   description: Debian 13.x  (Trixie),          qt_version: '6' }
+          { distribution: debian, codename: trixie,   description: Debian 13.x  (Trixie),          qt_version: '6' },
+          { distribution: fedora, codename: 39,       description: Fedora 39,                      qt_version: '6' },
+          { distribution: fedora, codename: 40,       description: Fedora 40,                      qt_version: '6' },
+          { distribution: fedora, codename: 41,       description: Fedora 41,                      qt_version: '6' }
         ]
         architecture: [
           [ amd64, linux/amd64  ],
@@ -62,12 +61,16 @@ jobs:
             architecture: [ armhf, linux/arm/v7 ]
           - os: { distribution: debian, codename: trixie, } # Trixie armv6 not available yet (https://hub.docker.com/r/balenalib/rpi-raspbian/tags)
             architecture: [ armhf, linux/arm/v6 ]
+          - os: { distribution: fedora }
+            architecture: [ armhf, linux/arm/v6 ]
+          - os: { distribution: fedora }
+            architecture: [ armhf, linux/arm/v7 ]
 
     steps:
       - name: ⬇ Checkout hyperion.ng
         uses: actions/checkout@v4
         with:
-          repository: ${{ env.repository }}/hyperion.ng
+          repository: ${{ inputs.repo_checkout }}
           ref: ${{ inputs.head_sha || 'master' }}
           submodules: recursive
 
@@ -78,48 +81,28 @@ jobs:
 
       - name: 🔧 Prepare
         run: |
-          echo '::group::Checking the version number'
-            if [[ "${{ inputs.nightly }}" = true ]]; then
-              echo "$(tr -d '\n' < .version)+nightly$(date '+%Y%m%d')${{ inputs.head_sha }}" > .version
-            else
-              tr -d '\n' < .version > temp && mv temp .version
-            fi
-          echo '::endgroup::'
-
-          echo '::group::Copy debian folder'
+          if [[ ${{ matrix.os.distribution }} == @(debian|ubuntu) ]]; then
             cp -r releases-ci/debian ${GITHUB_WORKSPACE}/
-          echo '::endgroup::'
+          else
+            cp -r releases-ci/rpmbuild ${GITHUB_WORKSPACE}/
+          fi
 
-          echo '::group::Generate environment variables'
-            VERSION=$(cat .version)
-            echo VERSION=${VERSION} >> $GITHUB_ENV
-            if [[ $VERSION == *"-"* ]]; then
-              echo STANDARDS_VERSION=$(echo ${VERSION%-*}) >> $GITHUB_ENV
-              echo DEBIAN_FORMAT='3.0 (quilt)' >> $GITHUB_ENV
-            else
-              echo STANDARDS_VERSION=$(echo ${VERSION%+*}) >> $GITHUB_ENV
-              echo DEBIAN_FORMAT='3.0 (native)' >> $GITHUB_ENV
-            fi
-          echo '::endgroup::'
+          if [[ "${{ inputs.nightly }}" = true ]]; then
+            echo "$(tr -d '\n' < .version)+nightly$(date '+%Y%m%d')${{ inputs.head_sha }}" > .version
+          else
+            tr -d '\n' < .version > temp && mv temp .version
+          fi
 
       - name: 👷 Build
-        shell: bash
-        run: |
-          mkdir -p "${GITHUB_WORKSPACE}/deploy"
-          docker run --rm --platform=${{ matrix.architecture[1] }} \
-            -v "${GITHUB_WORKSPACE}/deploy:/deploy" \
-            -v "${GITHUB_WORKSPACE}:/source:rw" \
-            ghcr.io/${{ env.ghcr }}/${{ matrix.os.distribution }}:${{ env.DOCKER_IMAGE }} \
-            /bin/bash -c "cd /source && \
-            git config --global --add safe.directory '*' && \
-            mkdir -p debian/source && echo '${{ env.DEBIAN_FORMAT }}' > debian/source/format && echo 10 > debian/compat && \
-            dch --create --distribution ${{ matrix.os.codename }} --package 'hyperion' -v '${{ env.VERSION }}~${{ matrix.os.codename }}' '${{ github.event.commits[0].message }}' && \
-            cp -fr LICENSE debian/copyright && \
-            sed 's/@ARCHITECTURE@/${{ matrix.architecture[0] }}/g; s/@STANDARDS_VERSION@/${{ env.STANDARDS_VERSION }}/g' debian/control.in > debian/control && \
-            debuild -b -uc -us && \
-            cp ../hyperion_*.deb /deploy"
-        env:
-          DOCKER_IMAGE: ${{ matrix.os.qt_version == '6' && format('{0}-qt6', matrix.os.codename) || matrix.os.codename }}
+        uses: ./releases-ci/.github/actions/build
+        with:
+          workingDirectory: ${{ github.workspace }}/
+          distribution: ${{ matrix.os.distribution }}
+          codename: ${{ matrix.os.codename }}
+          architecture: ${{ matrix.architecture[0] }}
+          qtVersion: ${{ matrix.os.qt_version }}
+          dockerArchitecture: ${{ matrix.architecture[1] }}
+          dockerEntrypoint: ${{ matrix.architecture[0] != 'amd64' && '--entrypoint /usr/bin/env' || '' }}
 
       - name: 📦 Upload
         if: ${{ inputs.upload }}
