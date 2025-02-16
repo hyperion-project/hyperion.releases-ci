@@ -8,7 +8,7 @@
 %global source_date_epoch_from_changelog 0
 
 Name:           hyperion
-Version:        %{_version}
+Version:        %{hyperion_version}
 Release:        0%{?dist}
 Summary:        The successor to Hyperion aka Hyperion Next Generation
 
