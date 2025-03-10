@@ -68,7 +68,7 @@ override_dh_auto_install:
 
 override_dh_install:
 	mkdir -p $(TARGET)/DEBIAN
-	cp -rf cmake/package-scripts/* $(TARGET)/DEBIAN/
+	cp -rf cmake/linux/package-scripts/* $(TARGET)/DEBIAN/
 
 override_dh_fixperms:
 	chmod -R 0775 $(TARGET)/DEBIAN
