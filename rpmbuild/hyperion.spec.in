@@ -41,7 +41,12 @@ BuildRequires:  xcb-util-image-devel xcb-util-devel
 BuildRequires:  dbus-devel
 BuildRequires:  alsa-lib-devel
 BuildRequires:  libftdi-devel
-BuildRequires:  systemd
+
+%if 0%{?fedora}
+BuildRequires:	systemd-devel
+%else
+BuildRequires:  libudev-devel
+%endif
 
 %if 0%{?suse_version} >= 1210
 BuildRequires: systemd-rpm-macros
@@ -271,5 +276,6 @@ echo "--------------------------------------------------------------------------
 %exclude %{_datadir}/%{name}/service/%{name}.initctl
 %exclude %{_includedir}/
 %exclude /usr/lib/
+%exclude /usr/lib64/
 
 %changelog

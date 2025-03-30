@@ -36,13 +36,15 @@ jobs:
           { distribution: ubuntu, codename: jammy,    description: Ubuntu 22.04 (Jammy Jellyfish), qt_version: '6' },
           { distribution: ubuntu, codename: noble,    description: Ubuntu 24.04 (Noble Numbat),    qt_version: '6' },
           { distribution: ubuntu, codename: oracular, description: Ubuntu 24.10 (Oracular Oriole), qt_version: '6' },
+          { distribution: ubuntu, codename: plucky,   description: Ubuntu 25.04 (Plucky Puffin),   qt_version: '6' },
           { distribution: debian, codename: buster,   description: Debian 10.x  (Buster),          qt_version: '5' }, # Qt 6 not available
           { distribution: debian, codename: bullseye, description: Debian 11.x  (Bullseye),        qt_version: '5' }, # Qt 6 only available from bullseye-backports
           { distribution: debian, codename: bookworm, description: Debian 12.x  (Bookworm),        qt_version: '6' },
           { distribution: debian, codename: trixie,   description: Debian 13.x  (Trixie),          qt_version: '6' },
           { distribution: fedora, codename: 39,       description: Fedora 39,                      qt_version: '6' },
           { distribution: fedora, codename: 40,       description: Fedora 40,                      qt_version: '6' },
-          { distribution: fedora, codename: 41,       description: Fedora 41,                      qt_version: '6' }
+          { distribution: fedora, codename: 41,       description: Fedora 41,                      qt_version: '6' },
+          { distribution: fedora, codename: 42,       description: Fedora 42,                      qt_version: '6' }
         ]
         architecture: [
           [ amd64, linux/amd64  ],
