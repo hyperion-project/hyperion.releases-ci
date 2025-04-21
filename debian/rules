@@ -7,7 +7,7 @@ BUILDDIR := build
 TARGET := debian/tmp
 
 # libcec currently not linked in hyperion therefore not recognizable but hardcoded in FIND_DEPENDS
-REQUIRED_DEPS := libusb libasound libmbedtls libturbojpeg libcec
+REQUIRED_DEPS := libusb libasound libmbedtls libturbojpeg libcec libpython3
 
 # get qt version and set qt deps depending on version
 QT6_PACKAGE_VERSION := $(shell dpkg-query -W -f '$${Version}' libqt6widgets6* 2>/dev/null || echo 0)
