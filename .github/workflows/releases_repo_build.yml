@@ -23,7 +23,7 @@ jobs:
     uses: ./.github/workflows/build_deb_rpm.yml
     secrets: inherit
     with:
-      repo_checkout: ${{ inputs.repo_checkout }}
+      repo_checkout: ${{ github.event.client_payload.repo_checkout || inputs.repo_checkout }}
       head_sha: ${{ github.event.client_payload.head_sha || inputs.head_sha }}
       upload: true
 
