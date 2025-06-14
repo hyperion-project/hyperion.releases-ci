@@ -36,7 +36,7 @@ jobs:
           { distribution: ubuntu, codename: noble,    description: Ubuntu 24.04 (Noble Numbat),    qt_version: '6' },
           { distribution: ubuntu, codename: oracular, description: Ubuntu 24.10 (Oracular Oriole), qt_version: '6' },
           { distribution: ubuntu, codename: plucky,   description: Ubuntu 25.04 (Plucky Puffin),   qt_version: '6' },
-          { distribution: debian, codename: bullseye, description: Debian 11.x  (Bullseye),        qt_version: '5' }, # Qt 6 only available on amd64, arm64 and armv7
+          { distribution: debian, codename: bullseye, description: Debian 11.x  (Bullseye),        qt_version: '6' },
           { distribution: debian, codename: bookworm, description: Debian 12.x  (Bookworm),        qt_version: '6' },
           { distribution: debian, codename: trixie,   description: Debian 13.x  (Trixie),          qt_version: '6' },
           { distribution: fedora, codename: 39,       description: Fedora 39,                      qt_version: '6' },
@@ -47,22 +47,13 @@ jobs:
         architecture: [
           [ amd64, linux/amd64  ],
           [ arm64, linux/arm64  ],
-          [ armhf, linux/arm/v6 ],
-          [ armhf, linux/arm/v7 ]
+          [ armhf, linux/arm/v6 ]
         ]
         exclude:
           - os: { distribution: ubuntu }
             architecture: [ armhf, linux/arm/v6 ]
-          - os: { distribution: debian, codename: bullseye, }
-            architecture: [ armhf, linux/arm/v7 ]
-          - os: { distribution: debian, codename: bookworm, }
-            architecture: [ armhf, linux/arm/v7 ]
-          - os: { distribution: debian, codename: trixie, } # Trixie armv6 not available yet (https://hub.docker.com/r/balenalib/rpi-raspbian/tags)
-            architecture: [ armhf, linux/arm/v6 ]
           - os: { distribution: fedora }
             architecture: [ armhf, linux/arm/v6 ]
-          - os: { distribution: fedora }
-            architecture: [ armhf, linux/arm/v7 ]
 
     steps:
       - name: ⬇ Checkout hyperion.ng
@@ -98,7 +89,7 @@ jobs:
           distribution: ${{ matrix.os.distribution }}
           codename: ${{ matrix.os.codename }}
           architecture: ${{ matrix.architecture[0] }}
-          qtVersion: ${{ matrix.os.qt_version }}
+          qtVersion: ${{ matrix.os.codename == 'bullseye' && matrix.architecture[0] == 'armhf' && '5' || matrix.os.qt_version }} # Debian Bullseye does not provide Qt6 on armv6
           dockerArchitecture: ${{ matrix.architecture[1] }}
           dockerEntrypoint: ${{ matrix.architecture[0] != 'amd64' && '--entrypoint /usr/bin/env' || '' }}
 
