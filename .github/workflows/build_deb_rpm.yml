@@ -47,13 +47,22 @@ jobs:
         architecture: [
           [ amd64, linux/amd64  ],
           [ arm64, linux/arm64  ],
-          [ armhf, linux/arm/v6 ]
+          [ armhf, linux/arm/v6 ],
+          [ armhf, linux/arm/v7 ]
         ]
         exclude:
           - os: { distribution: ubuntu }
             architecture: [ armhf, linux/arm/v6 ]
+          - os: { distribution: debian, codename: bullseye, }
+            architecture: [ armhf, linux/arm/v7 ]
+          - os: { distribution: debian, codename: bookworm, }
+            architecture: [ armhf, linux/arm/v7 ]
+          - os: { distribution: debian, codename: trixie, }
+            architecture: [ armhf, linux/arm/v7 ]
           - os: { distribution: fedora }
             architecture: [ armhf, linux/arm/v6 ]
+          - os: { distribution: fedora }
+            architecture: [ armhf, linux/arm/v7 ]
 
     steps:
       - name: ⬇ Checkout hyperion.ng
