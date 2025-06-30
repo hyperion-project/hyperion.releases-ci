@@ -131,7 +131,7 @@ check_architecture() {
 		valid_architectures='armv6, armv7, armhf, armel, arm64, amd64'
 		;;
 	fedora)
-		valid_architectures='amd64'
+		valid_architectures='amd64, arm64'
 		;;
 	*)
 		error "Unsupported distribution: ${distro}. You might need to run the script providing your underlying distribution, i.e. ubuntu, debian or fedora and its codebase."
@@ -254,8 +254,14 @@ function install_dnf_package() {
 
 	info "Integrate Hyperion Project Repository..."
 	info ""
-	if ! sudocmd "add Hyperion Project repository to the system:" dnf -q -y config-manager --add-repo https://${_NIGHTLY}dnf.${_BASE_REPO_URI}/fedora/hyperion.repo; then
-		error "Failed to add the Hyperion Project Repository. Please run 'dnf check-update' and try again."
+	if [[ "$(rpm -E %fedora)" -lt 41 ]]; then
+		if ! sudocmd "add Hyperion Project repository to the system:" dnf -q -y config-manager --add-repo https://${_NIGHTLY}dnf.${_BASE_REPO_URI}/fedora/hyperion.repo; then
+			error "Failed to add the Hyperion Project Repository. Please run 'dnf check-update' and try again."
+		fi
+	else
+		if ! sudocmd "add Hyperion Project repository to the system:" dnf -q -y config-manager addrepo --from-repofile=https://${_NIGHTLY}dnf.${_BASE_REPO_URI}/fedora/hyperion.repo; then
+			error "Failed to add the Hyperion Project Repository. Please run 'dnf check-update' and try again."
+		fi
 	fi
 
 	info "Install Hyperion..."
