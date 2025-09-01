@@ -121,7 +121,7 @@ jobs:
 
       - name: 📦 DEB Upload
         if: ${{ env.SECRET_REPO_USER != null && env.SECRET_REPO_PASSWORD != null && env.APT_SERVER_DIR != null && inputs.publish }}
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.6
         with:
           server: releases.hyperion-project.org
           username: ${{ secrets.REPO_USER }}
@@ -135,7 +135,7 @@ jobs:
 
       - name: 📦 RPM Upload
         if: ${{ env.SECRET_REPO_USER != null && env.SECRET_REPO_PASSWORD != null && env.DNF_SERVER_DIR != null && inputs.publish }}
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.6
         with:
           server: releases.hyperion-project.org
           username: ${{ secrets.REPO_USER }}
