@@ -66,14 +66,14 @@ jobs:
 
     steps:
       - name: ⬇ Checkout hyperion.ng
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: ${{ inputs.repo_checkout }}
           ref: ${{ inputs.head_sha || 'master' }}
           submodules: recursive
 
       - name: ⬇ Checkout hyperion.releases-ci
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           path: releases-ci
 
