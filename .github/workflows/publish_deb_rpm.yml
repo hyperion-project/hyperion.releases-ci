@@ -31,7 +31,7 @@ jobs:
         run: dnf install git gnupg2 zstd reprepro createrepo rpm-sign -y
 
       - name: ⬇ Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: 🔑 GPG Import
         if: ${{ env.SECRET_GPG_KEY != null }}
