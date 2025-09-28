@@ -98,8 +98,8 @@ function get_architecture() {
 			CURRENT_ARCHITECTURE=$USER_ARCHITECTURE
 		fi
 	else
-		# Change x86_xx to amdxx
-		CURRENT_ARCHITECTURE=${CURRENT_ARCHITECTURE//x86_/amd}
+		# Change amdxx to x86_xx 
+		CURRENT_ARCHITECTURE=${CURRENT_ARCHITECTURE//amd/x86_}
 		# Remove 'l' from armv6l, armv7l
 		CURRENT_ARCHITECTURE=${CURRENT_ARCHITECTURE//l/}
 	fi
@@ -128,10 +128,10 @@ check_architecture() {
 	valid_architectures=''
 	case "$distro" in
 	debian | ubuntu | raspbian | libreelec)
-		valid_architectures='armv6, armv7, armhf, armel, arm64, amd64'
+		valid_architectures='armv6, armv7, armhf, armel, arm64, x86_64'
 		;;
 	fedora)
-		valid_architectures='amd64, arm64'
+		valid_architectures='x86_64, arm64'
 		;;
 	*)
 		error "Unsupported distribution: ${distro}. You might need to run the script providing your underlying distribution, i.e. ubuntu, debian or fedora and its codebase."
