@@ -27,7 +27,7 @@ on:
 jobs:
   build:
     name: 🐧 ${{ matrix.os.description }} (${{ matrix.architecture[0] }})
-    runs-on: ${{ matrix.architecture[0] == 'amd64' && 'ubuntu-latest' || 'ubuntu-2404-arm' }}
+    runs-on: ${{ matrix.architecture[0] == 'amd64' && 'ubuntu-latest' || 'ubuntu-24.04-arm' }}
     strategy:
       fail-fast: false
       matrix:
