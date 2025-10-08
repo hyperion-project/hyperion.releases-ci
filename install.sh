@@ -135,10 +135,10 @@ check_architecture() {
 	valid_architectures=''
 	case "$distro" in
 	debian | ubuntu | raspbian | libreelec)
-		valid_architectures='armv6, armv7, armhf, armel, arm64, x86_64'
+		valid_architectures='armv6, armv7, armhf, armel, arm64, amd64, x86_64'
 		;;
 	fedora)
-		valid_architectures='x86_64, arm64'
+		valid_architectures='arm64, amd64, x86_64'
 		;;
 	*)
 		error "Unsupported distribution: ${distro}. You might need to run the script providing your underlying distribution, i.e. ubuntu, debian or fedora and its codebase."
