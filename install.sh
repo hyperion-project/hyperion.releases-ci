@@ -98,10 +98,17 @@ function get_architecture() {
 			CURRENT_ARCHITECTURE=$USER_ARCHITECTURE
 		fi
 	else
-		# Change amdxx to x86_xx 
-		CURRENT_ARCHITECTURE=${CURRENT_ARCHITECTURE//amd/x86_}
+		# Packages are named with amdxx for x86_xx and amdxx platforms. 
+		# TODO: The nighly mapping is the correct one and to be used after the next release
+		if [ -n "${_NIGHTLY}" ]; then
+			# Change x86_xx to amdxx  
+			CURRENT_ARCHITECTURE=${CURRENT_ARCHITECTURE//x86_/amd}	
+		else
+			# Workaround for 2.1.x package names - Change amdxx to x86_xx 
+			CURRENT_ARCHITECTURE=${CURRENT_ARCHITECTURE//amd/x86_}		
+		fi
 		# Remove 'l' from armv6l, armv7l
-		CURRENT_ARCHITECTURE=${CURRENT_ARCHITECTURE//l/}
+		CURRENT_ARCHITECTURE=${CURRENT_ARCHITECTURE//l/}		
 	fi
 	echo "${CURRENT_ARCHITECTURE}"
 }
