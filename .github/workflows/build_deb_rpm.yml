@@ -105,7 +105,7 @@ jobs:
 
       - name: 📦 Upload
         if: ${{ inputs.upload }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: ${{ format('artifact-{0}_{1}_{2}{3}', matrix.os.distribution, matrix.os.codename, matrix.architecture[0], matrix.os.qt_version  == '6' && '_qt6' || '')}}
           path: deploy
