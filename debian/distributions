@@ -16,14 +16,6 @@ SignWith: yes
 
 Origin: Hyperion-Project
 Label: releases.hyperion-project.org
-Codename: oracular
-Architectures: amd64 armhf arm64
-Components: main
-Description: Official APT Repository by Hyperion Project
-SignWith: yes
-
-Origin: Hyperion-Project
-Label: releases.hyperion-project.org
 Codename: plucky
 Architectures: amd64 armhf arm64
 Components: main
@@ -33,6 +25,14 @@ SignWith: yes
 Origin: Hyperion-Project
 Label: releases.hyperion-project.org
 Codename: questing
+Architectures: amd64 armhf arm64
+Components: main
+Description: Official APT Repository by Hyperion Project
+SignWith: yes
+
+Origin: Hyperion-Project
+Label: releases.hyperion-project.org
+Codename: resolute
 Architectures: amd64 armhf arm64
 Components: main
 Description: Official APT Repository by Hyperion Project
