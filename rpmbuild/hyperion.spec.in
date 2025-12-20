@@ -41,6 +41,7 @@ BuildRequires:  xcb-util-image-devel xcb-util-devel
 BuildRequires:  dbus-devel
 BuildRequires:  alsa-lib-devel
 BuildRequires:  libftdi-devel
+BuildRequires:  libdrm-devel
 
 %if 0%{?fedora}
 BuildRequires:	systemd-devel
@@ -68,6 +69,7 @@ Requires:       mbedtls
 Requires:       libcec
 Requires:       alsa-lib
 Requires:       firewalld
+Requires:       libatomic
 
 BuildArch:      %(uname -m)
 
