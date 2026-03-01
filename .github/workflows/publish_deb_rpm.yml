@@ -43,7 +43,7 @@ jobs:
           SECRET_GPG_KEY: ${{ secrets.GPG_KEY }}
 
       - name: 💾 Artifact download
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
 
       - name: 🔧 Prepare DEB/RPM Upload
         if: ${{ env.SECRET_APT_REPO_NIGHTLY != null && env.SECRET_APT_REPO != null && env.SECRET_DNF_REPO_NIGHTLY != null && env.SECRET_DNF_REPO != null }}
