@@ -42,30 +42,39 @@ runs:
       run: |
         mkdir -p "deploy"
         VERSION=$(cat .version)
+        RAW_BUILD_MESSAGE="${BUILD_MESSAGE_INPUT:-Automated build}"
+        SAFE_BUILD_MESSAGE=$(printf '%s' "${RAW_BUILD_MESSAGE}" | tr '\r\n\t' '   ' | sed -E 's/[[:cntrl:]]//g; s/[[:space:]]+/ /g; s/^ +//; s/ +$//')
+        SAFE_BUILD_MESSAGE="${SAFE_BUILD_MESSAGE:0:200}"
+        if [[ -z "${SAFE_BUILD_MESSAGE}" ]]; then
+          SAFE_BUILD_MESSAGE="Automated build"
+        fi
         if [[ ${{ inputs.distribution }} == @(debian|ubuntu) ]]; then
           docker run --rm --privileged --platform=${{ inputs.dockerArchitecture }} ${{ inputs.dockerEntrypoint }} \
+            -e BUILD_MESSAGE="${SAFE_BUILD_MESSAGE}" \
             -w "/source" \
             -v "${{ inputs.workingDirectory }}/deploy:/deploy" \
             -v "${{ inputs.workingDirectory }}:/source:rw" \
             ghcr.io/${{ inputs.ghcr }}/${{ inputs.distribution }}:${{ inputs.qtVersion == '6' && format('{0}-qt6', inputs.codename) || inputs.codename }} \
             /bin/bash -c "git config --global --add safe.directory '*' && \
             mkdir -p debian/source && echo '$([[ $VERSION == *-* ]] && echo "3.0 (quilt)" || echo "3.0 (native)")' > debian/source/format && echo 10 > debian/compat && \
-            dch --create --distribution ${{ inputs.codename }} --package 'hyperion' -v '$(echo ${VERSION})~${{ inputs.codename }}' '${{ github.event.commits[0].message }}' && \
+            dch --create --distribution ${{ inputs.codename }} --package 'hyperion' -v '$(echo ${VERSION})~${{ inputs.codename }}' \"\$BUILD_MESSAGE\" && \
             cp -fr LICENSE debian/copyright && \
             sed 's/@ARCHITECTURE@/${{ inputs.architecture }}/g; s/@STANDARDS_VERSION@/$(echo ${VERSION%[-+]*})/g' debian/control.in > debian/control && \
             debuild -b -uc -us && \
             cp ../hyperion_*.deb ./deploy"
         else
           docker run --rm --platform=${{ inputs.dockerArchitecture }} ${{ inputs.dockerEntrypoint }} \
+            -e BUILD_MESSAGE="${SAFE_BUILD_MESSAGE}" \
             -w "/root" \
             -v "${{ inputs.workingDirectory }}/deploy:/deploy" \
             -v "${{ inputs.workingDirectory }}:/root/hyperion.ng:rw" \
             ghcr.io/${{ inputs.ghcr }}/${{ inputs.distribution }}:${{ inputs.qtVersion == '6' && format('{0}-qt6', inputs.codename) || inputs.codename }} \
             /bin/bash -c "tar -czf rpmbuild/SOURCES/hyperion.ng.tar.gz hyperion.ng/ && \
             cp -f hyperion.ng/rpmbuild/hyperion.spec.in rpmbuild/SPECS/hyperion.spec && \
-            rpmdev-bumpspec --comment='${{ github.event.commits[0].message }}' --userstring='${{ env.ACTOR }}' rpmbuild/SPECS/hyperion.spec && \
+            rpmdev-bumpspec --comment=\"\$BUILD_MESSAGE\" --userstring='${{ env.ACTOR }}' rpmbuild/SPECS/hyperion.spec && \
             rpmbuild -ba --define 'hyperion_version $(echo ${VERSION} | sed s/-/~/g | sed s/+/^/g)' rpmbuild/SPECS/hyperion.spec --clean && \
             cp -fv rpmbuild/RPMS/$(uname -m)/hyperion* /deploy"
         fi
       env:
         ACTOR: "Hyperion Project <admin@hyperion-project.org>"
+        BUILD_MESSAGE_INPUT: ${{ github.event.commits[0].message || github.event.head_commit.message || github.event.pull_request.title || github.event_name }}
