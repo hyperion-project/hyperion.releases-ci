@@ -16,22 +16,6 @@ SignWith: yes
 
 Origin: Hyperion-Project
 Label: releases.hyperion-project.org
-Codename: plucky
-Architectures: amd64 armhf arm64
-Components: main
-Description: Official APT Repository by Hyperion Project
-SignWith: yes
-
-Origin: Hyperion-Project
-Label: releases.hyperion-project.org
-Codename: questing
-Architectures: amd64 armhf arm64
-Components: main
-Description: Official APT Repository by Hyperion Project
-SignWith: yes
-
-Origin: Hyperion-Project
-Label: releases.hyperion-project.org
 Codename: resolute
 Architectures: amd64 armhf arm64
 Components: main
@@ -41,15 +25,6 @@ SignWith: yes
 Origin: Hyperion-Project
 Label: releases.hyperion-project.org
 Suite: oldstable
-Codename: bullseye
-Architectures: amd64 armhf arm64
-Components: main
-Description: Official APT Repository by Hyperion Project
-SignWith: yes
-
-Origin: Hyperion-Project
-Label: releases.hyperion-project.org
-Suite: stable
 Codename: bookworm
 Architectures: amd64 armhf arm64
 Components: main
@@ -58,8 +33,17 @@ SignWith: yes
 
 Origin: Hyperion-Project
 Label: releases.hyperion-project.org
-Suite: testing
+Suite: stable
 Codename: trixie
+Architectures: amd64 armhf arm64
+Components: main
+Description: Official APT Repository by Hyperion Project
+SignWith: yes
+
+Origin: Hyperion-Project
+Label: releases.hyperion-project.org
+Suite: testing
+Codename: forky
 Architectures: amd64 armhf arm64
 Components: main
 Description: Official APT Repository by Hyperion Project
