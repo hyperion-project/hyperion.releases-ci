@@ -57,7 +57,7 @@ jobs:
           - os: { distribution: fedora }
             architecture: [ armhf, linux/arm/v6 ]
           - os: { distribution: fedora }
-            architecture: [ armhf, linux/arm/v7 ]
+            architecture: [ armhf, linux/arm/v6, linux/arm/v7 ]
 
     steps:
       - name: ⬇ Checkout hyperion.ng
