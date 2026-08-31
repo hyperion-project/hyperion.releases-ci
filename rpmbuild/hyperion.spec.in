@@ -42,6 +42,7 @@ BuildRequires:  dbus-devel
 BuildRequires:  alsa-lib-devel
 BuildRequires:  libftdi-devel
 BuildRequires:  libdrm-devel
+BuildRequires:  pipewire-devel
 
 %if 0%{?fedora}
 BuildRequires:	systemd-devel
