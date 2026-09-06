@@ -34,15 +34,10 @@ jobs:
         os: [
           { distribution: ubuntu, codename: jammy,    description: Ubuntu 22.04 (Jammy Jellyfish),  qt_version: '6' },
           { distribution: ubuntu, codename: noble,    description: Ubuntu 24.04 (Noble Numbat),     qt_version: '6' },
-          { distribution: ubuntu, codename: plucky,   description: Ubuntu 25.04 (Plucky Puffin),    qt_version: '6' },
-          { distribution: ubuntu, codename: questing, description: Ubuntu 25.10 (Questing Quokka),  qt_version: '6' },
           { distribution: ubuntu, codename: resolute, description: Ubuntu 26.04 (Resolute Raccoon), qt_version: '6' },
-          { distribution: debian, codename: bullseye, description: Debian 11.x  (Bullseye),         qt_version: '6' },
           { distribution: debian, codename: bookworm, description: Debian 12.x  (Bookworm),         qt_version: '6' },
           { distribution: debian, codename: trixie,   description: Debian 13.x  (Trixie),           qt_version: '6' },
-          { distribution: fedora, codename: 39,       description: Fedora 39,                       qt_version: '6' },
-          { distribution: fedora, codename: 40,       description: Fedora 40,                       qt_version: '6' },
-          { distribution: fedora, codename: 41,       description: Fedora 41,                       qt_version: '6' },
+          { distribution: debian, codename: forky,    description: Debian 14.x  (Forky),            qt_version: '6' },
           { distribution: fedora, codename: 42,       description: Fedora 42,                       qt_version: '6' },
           { distribution: fedora, codename: 43,       description: Fedora 43,                       qt_version: '6' },
           { distribution: fedora, codename: 44,       description: Fedora 44,                       qt_version: '6' },
@@ -57,12 +52,8 @@ jobs:
         exclude:
           - os: { distribution: ubuntu }
             architecture: [ armhf, linux/arm/v6 ]
-          - os: { distribution: debian, codename: bullseye, }
-            architecture: [ armhf, linux/arm/v7 ]
-          - os: { distribution: debian, codename: bookworm, }
-            architecture: [ armhf, linux/arm/v7 ]
-          - os: { distribution: debian, codename: trixie, }
-            architecture: [ armhf, linux/arm/v7 ]
+          - os: { distribution: debian, codename: forky }
+            architecture: [ armhf, linux/arm/v6 ]
           - os: { distribution: fedora }
             architecture: [ armhf, linux/arm/v6 ]
           - os: { distribution: fedora }
@@ -102,7 +93,7 @@ jobs:
           distribution: ${{ matrix.os.distribution }}
           codename: ${{ matrix.os.codename }}
           architecture: ${{ matrix.architecture[0] }}
-          qtVersion: ${{ matrix.os.codename == 'bullseye' && matrix.architecture[0] == 'armhf' && '5' || matrix.os.qt_version }} # Debian Bullseye does not provide Qt6 on armv6
+          qtVersion: ${{ matrix.os.qt_version }}
           dockerArchitecture: ${{ matrix.architecture[1] }}
           dockerEntrypoint: ${{ matrix.architecture[0] != 'amd64' && '--entrypoint /usr/bin/env' || '' }}
 
