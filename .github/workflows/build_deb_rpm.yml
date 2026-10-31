@@ -52,6 +52,8 @@ jobs:
         exclude:
           - os: { distribution: ubuntu }
             architecture: [ armhf, linux/arm/v6 ]
+          - os: { distribution: debian, codename: bookworm, }
+            architecture: [ armhf, linux/arm/v7 ]
           - os: { distribution: debian, codename: trixie, }
             architecture: [ armhf, linux/arm/v7 ]
           - os: { distribution: debian, codename: forky }
