@@ -32,16 +32,18 @@ jobs:
       fail-fast: false
       matrix:
         os: [
-          { distribution: ubuntu, codename: jammy,    description: Ubuntu 22.04 (Jammy Jellyfish),  qt_version: '6' },
-          { distribution: ubuntu, codename: noble,    description: Ubuntu 24.04 (Noble Numbat),     qt_version: '6' },
-          { distribution: ubuntu, codename: resolute, description: Ubuntu 26.04 (Resolute Raccoon), qt_version: '6' },
-          { distribution: debian, codename: bookworm, description: Debian 12.x  (Bookworm),         qt_version: '6' },
-          { distribution: debian, codename: trixie,   description: Debian 13.x  (Trixie),           qt_version: '6' },
-          { distribution: debian, codename: forky,    description: Debian 14.x  (Forky),            qt_version: '6' },
-          { distribution: fedora, codename: 42,       description: Fedora 42,                       qt_version: '6' },
-          { distribution: fedora, codename: 43,       description: Fedora 43,                       qt_version: '6' },
-          { distribution: fedora, codename: 44,       description: Fedora 44,                       qt_version: '6' },
-          { distribution: fedora, codename: 45,       description: Fedora 45,                       qt_version: '6' },
+          { distribution: ubuntu, codename: jammy,    description: Ubuntu 22.04 (Jammy Jellyfish),   qt_version: '6' },
+          { distribution: ubuntu, codename: noble,    description: Ubuntu 24.04 (Noble Numbat),      qt_version: '6' },
+          { distribution: ubuntu, codename: resolute, description: Ubuntu 26.04 (Resolute Raccoon),  qt_version: '6' },
+          { distribution: ubuntu, codename: stonking, description: Ubuntu 26.10 (Stonking Stingray), qt_version: '6' },
+          { distribution: debian, codename: bookworm, description: Debian 12.x  (Bookworm),          qt_version: '6' },
+          { distribution: debian, codename: trixie,   description: Debian 13.x  (Trixie),            qt_version: '6' },
+          { distribution: debian, codename: forky,    description: Debian 14.x  (Forky),             qt_version: '6' },
+          { distribution: fedora, codename: 42,       description: Fedora 42,                        qt_version: '6' },
+          { distribution: fedora, codename: 43,       description: Fedora 43,                        qt_version: '6' },
+          { distribution: fedora, codename: 44,       description: Fedora 44,                        qt_version: '6' },
+          { distribution: fedora, codename: 45,       description: Fedora 45,                        qt_version: '6' },
+          { distribution: fedora, codename: 46,       description: Fedora 46,                        qt_version: '6' }
         ]
         architecture: [
           [ amd64, linux/amd64  ],
@@ -50,14 +52,13 @@ jobs:
           [ armhf, linux/arm/v7 ]
         ]
         exclude:
+          # Ubuntu: armv7 only
           - os: { distribution: ubuntu }
             architecture: [ armhf, linux/arm/v6 ]
-          - os: { distribution: debian, codename: bookworm, }
+          # Debian: armv6 runs on armv7 hardware
+          - os: { distribution: debian }
             architecture: [ armhf, linux/arm/v7 ]
-          - os: { distribution: debian, codename: trixie, }
-            architecture: [ armhf, linux/arm/v7 ]
-          - os: { distribution: debian, codename: forky }
-            architecture: [ armhf, linux/arm/v6 ]
+          # Fedora: amd64/arm64 only
           - os: { distribution: fedora }
             architecture: [ armhf, linux/arm/v6 ]
           - os: { distribution: fedora }
