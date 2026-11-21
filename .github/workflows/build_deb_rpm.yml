@@ -99,7 +99,6 @@ jobs:
           codename: ${{ matrix.os.codename }}
           architecture: ${{ matrix.architecture[0] }}
           qtVersion: ${{ matrix.os.qt_version }}
-          ghcr: paulchen-panther
           dockerArchitecture: ${{ matrix.architecture[1] }}
           dockerEntrypoint: ${{ matrix.architecture[0] != 'amd64' && '--entrypoint /usr/bin/env' || '' }}
 
