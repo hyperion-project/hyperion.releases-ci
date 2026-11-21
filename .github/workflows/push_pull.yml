@@ -6,7 +6,7 @@ run-name: |
 on:
   push:
     branches:
-      - 'main'
+      - 'forky'
   pull_request:
     branches:
       - 'main'
